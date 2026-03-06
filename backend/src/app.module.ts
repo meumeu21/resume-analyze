@@ -6,6 +6,7 @@ import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import { validate } from './config/env.validation';
 import { DatabaseModule } from './database/database.module';
+import { DatabaseEntitiesModule } from './database/database-entities.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { DatabaseModule } from './database/database.module';
     }),
 
     DatabaseModule,
+    DatabaseEntitiesModule,
     // AuthModule,
     // UsersModule,
     // ProjectsModule,

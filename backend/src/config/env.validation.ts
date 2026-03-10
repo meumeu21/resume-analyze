@@ -48,6 +48,14 @@ class EnvironmentVariables {
   @IsUrl({ require_tld: false })
   @IsOptional()
   FRONTEND_URL: string = 'http://localhost:5173';
+
+  @IsString()
+  @IsOptional()
+  GITHUB_TOKEN: string;
+
+  @IsString()
+  @IsOptional()
+  ANTHROPIC_API_KEY: string;
 }
 
 export function validate(config: Record<string, unknown>) {

@@ -41,6 +41,13 @@ export class Profile {
   @Column({ name: 'hard_skills', type: 'text', array: true, default: [] })
   hardSkills: string[];
 
+  @Column({ type: 'text', array: true, default: [] })
+  tools: string[];
+
+  // определяется нейросетью из заранее заложенного списка
+  @Column({ name: 'activity_field', type: 'varchar', nullable: true })
+  activityField: string | null;
+
   @Column({ name: 'is_profile_public', default: true })
   isProfilePublic: boolean;
 

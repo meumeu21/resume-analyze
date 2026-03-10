@@ -4,6 +4,7 @@ import {
   User, Profile, ContactLink, Project,
   GithubAccount, GithubRepo, AiReport,
   PasswordResetToken, ProfileView,
+  ProjectFile, Favorite, Follow,
 } from './entities';
 
 @Module({
@@ -12,6 +13,7 @@ import {
       User, Profile, ContactLink, Project,
       GithubAccount, GithubRepo, AiReport,
       PasswordResetToken, ProfileView,
+      ProjectFile, Favorite, Follow,
     ]),
   ],
   exports: [TypeOrmModule],

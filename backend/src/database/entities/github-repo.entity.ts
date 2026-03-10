@@ -9,12 +9,12 @@ export class GithubRepo {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'github_account_id' })
-  githubAccountId: string;
+  @Column({ name: 'github_account_id', nullable: true })
+  githubAccountId: string | null;
 
-  @ManyToOne(() => GithubAccount, (a) => a.repos, { onDelete: 'CASCADE' })
+  @ManyToOne(() => GithubAccount, (a) => a.repos, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'github_account_id' })
-  githubAccount: GithubAccount;
+  githubAccount: GithubAccount | null;
 
   // числовой ID репозитория на стороне GitHub
   @Column({ name: 'github_repo_id', unique: true })

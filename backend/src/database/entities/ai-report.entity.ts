@@ -6,8 +6,10 @@ import { User } from './user.entity';
 import { Project } from './project.entity';
 
 export enum ReportType {
-  PROJECT = 'project',       // анализ конкретного проекта
-  PORTFOLIO = 'portfolio',   // общий "портрет разработчика"
+  PROJECT = 'project',             // анализ конкретного проекта (резюме нейронки)
+  PORTFOLIO = 'portfolio',         // общий "портрет разработчика"
+  RESUME = 'resume',               // текстовый шаблон резюме с описательной частью и навыками
+  PROJECT_IDEAS = 'project_ideas', // идеи для проектов и прокачки
 }
 
 export enum ReportStatus {

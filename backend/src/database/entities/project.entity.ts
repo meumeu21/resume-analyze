@@ -1,9 +1,11 @@
 import {
   Column, CreateDateColumn, Entity, JoinColumn,
-  ManyToOne, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn,
+  ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn,
 } from 'typeorm';
 import { User } from './user.entity';
 import { GithubRepo } from './github-repo.entity';
+import { ProjectFile } from './project-file.entity';
+import { Favorite } from './favorite.entity';
 
 export enum ProjectSource {
   MANUAL = 'manual',
@@ -58,11 +60,20 @@ export class Project {
   })
   source: ProjectSource;
 
+  @Column({ name: 'is_public', default: false })
+  isPublic: boolean;
+
   @Column({ name: 'started_at', type: 'date', nullable: true })
   startedAt: Date | null;
 
   @Column({ name: 'finished_at', type: 'date', nullable: true })
   finishedAt: Date | null;
+
+  @OneToMany(() => ProjectFile, (f) => f.project, { cascade: true })
+  files: ProjectFile[];
+
+  @OneToMany(() => Favorite, (f) => f.project)
+  favoritedBy: Favorite[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

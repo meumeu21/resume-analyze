@@ -9,6 +9,8 @@ import { AiReport } from './ai-report.entity';
 import { PasswordResetToken } from './password-reset-token.entity';
 import { ProfileView } from './profile-view.entity';
 import { ContactLink } from './contact-link.entity';
+import { Follow } from './follow.entity';
+import { Favorite } from './favorite.entity';
 
 @Entity('users')
 export class User {
@@ -50,4 +52,15 @@ export class User {
 
   @OneToMany(() => ProfileView, (v) => v.profileOwner)
   profileViews: ProfileView[];
+
+  // подписки: на кого подписан этот пользователь
+  @OneToMany(() => Follow, (f) => f.follower)
+  following: Follow[];
+
+  // подписчики: кто подписан на этого пользователя
+  @OneToMany(() => Follow, (f) => f.following)
+  followers: Follow[];
+
+  @OneToMany(() => Favorite, (f) => f.user)
+  favorites: Favorite[];
 }

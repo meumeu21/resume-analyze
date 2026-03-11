@@ -1,0 +1,79 @@
+@base = http://localhost:3000/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2NmEzYWVlMS1kM2FkLTQ3MjUtYWQ0Yy1iODY0N2JlNDM5NzQiLCJlbWFpbCI6InRlc3RAZXhhbXBsZS5jb20iLCJpYXQiOjE3NzMyMzgxOTIsImV4cCI6MTc3MzIzOTA5Mn0.X5ouZ19xtH49p2q64BnJFPFWbgcU7HHetm8MjH9d4JI
+
+### Регистрация
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Password123",
+  "nickname": "testuser"
+}
+
+### Логин
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Password123"
+}
+
+### Кто я
+GET {{base}}/auth/me
+Authorization: Bearer {{token}}
+
+### Список пользователей — БЕЗ токена
+GET {{base}}/users
+
+### Мой профиль
+GET {{base}}/users/me
+Authorization: Bearer {{token}}
+
+### Чужой профиль — БЕЗ токена
+GET {{base}}/users/ВСТАВЬ_ID_ПОЛЬЗОВАТЕЛЯ
+
+### Чужой профиль — С токеном (isFollowing)
+GET {{base}}/users/ВСТАВЬ_ID_ПОЛЬЗОВАТЕЛЯ
+Authorization: Bearer {{token}}
+
+### Подписаться
+POST {{base}}/users/ВСТАВЬ_ID_ПОЛЬЗОВАТЕЛЯ/follow
+Authorization: Bearer {{token}}
+
+### Отписаться
+DELETE {{base}}/users/ВСТАВЬ_ID_ПОЛЬЗОВАТЕЛЯ/follow
+Authorization: Bearer {{token}}
+
+### Создать проект
+POST {{base}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Мой проект",
+  "description": "Описание проекта",
+  "stack": ["TypeScript", "NestJS"],
+  "repoUrl": "https://github.com/microsoft/vscode",
+  "isPublic": true
+}
+
+### Просмотр проекта — БЕЗ токена
+GET {{base}}/projects/ВСТАВЬ_ID_ПРОЕКТА
+
+### Просмотр проекта — С токеном (isFavorited)
+GET {{base}}/projects/ВСТАВЬ_ID_ПРОЕКТА
+Authorization: Bearer {{token}}
+
+### Fetch GitHub данных для проекта
+POST {{base}}/projects/ВСТАВЬ_ID_ПРОЕКТА/fetch-github
+Authorization: Bearer {{token}}
+
+### Лайкнуть проект
+POST {{base}}/projects/ВСТАВЬ_ID_ПРОЕКТА/favorite
+Authorization: Bearer {{token}}
+
+### Мои избранные
+GET {{base}}/projects/favorites
+Authorization: Bearer {{token}}

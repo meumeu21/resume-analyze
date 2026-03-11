@@ -7,6 +7,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtOptionalGuard } from '../auth/guards/jwt-optional.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../database/entities';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -22,27 +23,31 @@ const multerStorage = diskStorage({
 });
 
 @Controller('projects')
-@UseGuards(JwtAuthGuard)
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
-  // /favorites до /:id
+  // Публичный — favorites до /:id
   @Get('favorites')
+  @UseGuards(JwtAuthGuard)
   getMyFavorites(@CurrentUser() user: User) {
     return this.projectsService.getMyFavorites(user.id);
   }
 
+  // Публичный просмотр проекта (если авторизован — покажет isFavorited)
   @Get(':id')
-  findOne(@Param('id') id: string, @CurrentUser() user: User) {
-    return this.projectsService.findOne(id, user.id);
+  @UseGuards(JwtOptionalGuard)
+  findOne(@Param('id') id: string, @CurrentUser() user: User | null) {
+    return this.projectsService.findOne(id, user?.id ?? null);
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   create(@CurrentUser() user: User, @Body() dto: CreateProjectDto) {
     return this.projectsService.create(user.id, dto);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   update(
     @Param('id') id: string,
     @CurrentUser() user: User,
@@ -52,16 +57,18 @@ export class ProjectsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @CurrentUser() user: User) {
     return this.projectsService.remove(id, user.id);
   }
 
   @Post(':id/files')
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: multerStorage,
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+      limits: { fileSize: 10 * 1024 * 1024 },
     }),
   )
   uploadFile(
@@ -73,6 +80,7 @@ export class ProjectsController {
   }
 
   @Delete(':id/files/:fileId')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   removeFile(
     @Param('id') id: string,
@@ -83,17 +91,20 @@ export class ProjectsController {
   }
 
   @Post(':id/fetch-github')
+  @UseGuards(JwtAuthGuard)
   fetchGithubData(@Param('id') id: string, @CurrentUser() user: User) {
     return this.projectsService.fetchGithubData(id, user.id);
   }
 
   @Post(':id/favorite')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   addFavorite(@Param('id') id: string, @CurrentUser() user: User) {
     return this.projectsService.addFavorite(id, user.id);
   }
 
   @Delete(':id/favorite')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   removeFavorite(@Param('id') id: string, @CurrentUser() user: User) {
     return this.projectsService.removeFavorite(id, user.id);

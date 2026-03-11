@@ -22,8 +22,8 @@ export class UsersService {
     @InjectRepository(Project) private readonly projectRepo: Repository<Project>,
   ) {}
 
-  // GET /users - список с фильтрами или рандомные 10
-  async findAll(query: UsersQueryDto, currentUserId: string) {
+  // GET /users
+  async findAll(query: UsersQueryDto, currentUserId: string | null) {
     const qb = this.profileRepo
       .createQueryBuilder('profile')
       .where('profile.isProfilePublic = true');
@@ -80,7 +80,7 @@ export class UsersService {
   }
 
   // GET /users/:id
-  async findOne(targetId: string, currentUserId: string) {
+  async findOne(targetId: string, currentUserId: string | null) {
     const profile = await this.profileRepo.findOne({
       where: { userId: targetId, isProfilePublic: true },
     });
@@ -93,9 +93,9 @@ export class UsersService {
         order: { createdAt: 'DESC' },
       }),
       this.followRepo.count({ where: { followingId: targetId } }),
-      this.followRepo.findOne({
-        where: { followerId: currentUserId, followingId: targetId },
-      }),
+      currentUserId
+        ? this.followRepo.findOne({ where: { followerId: currentUserId, followingId: targetId } })
+        : Promise.resolve(null),
     ]);
 
     return {
@@ -185,12 +185,12 @@ export class UsersService {
     };
   }
 
-  private async toUserCard(profile: Profile, currentUserId: string) {
+  private async toUserCard(profile: Profile, currentUserId: string | null) {
     const [followersCount, isFollowingRecord] = await Promise.all([
       this.followRepo.count({ where: { followingId: profile.userId } }),
-      this.followRepo.findOne({
-        where: { followerId: currentUserId, followingId: profile.userId },
-      }),
+      currentUserId
+        ? this.followRepo.findOne({ where: { followerId: currentUserId, followingId: profile.userId } })
+        : Promise.resolve(null),
     ]);
 
     return {

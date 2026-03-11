@@ -25,7 +25,7 @@ export class ProjectsService {
   ) {}
 
   // GET /projects/:id
-  async findOne(id: string, currentUserId: string) {
+  async findOne(id: string, currentUserId: string | null) {
     const project = await this.projectRepo.findOne({
       where: { id },
       relations: ['files'],
@@ -36,7 +36,9 @@ export class ProjectsService {
     }
 
     const [isFavorited, favoritesCount] = await Promise.all([
-      this.favoriteRepo.findOne({ where: { userId: currentUserId, projectId: id } }),
+      currentUserId
+        ? this.favoriteRepo.findOne({ where: { userId: currentUserId, projectId: id } })
+        : Promise.resolve(null),
       this.favoriteRepo.count({ where: { projectId: id } }),
     ]);
 
@@ -112,6 +114,7 @@ export class ProjectsService {
   async addFavorite(projectId: string, userId: string) {
     const project = await this.projectRepo.findOne({ where: { id: projectId, isPublic: true } });
     if (!project) throw new NotFoundException('Проект не найден');
+    if (project.userId === userId) throw new ConflictException('Нельзя добавить свой проект в избранное');
 
     const existing = await this.favoriteRepo.findOne({ where: { userId, projectId } });
     if (existing) throw new ConflictException('Уже в избранном');

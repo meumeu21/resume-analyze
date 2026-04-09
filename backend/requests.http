@@ -46,6 +46,10 @@ Authorization: Bearer {{token}}
 DELETE {{base}}/users/ВСТАВЬ_ID_ПОЛЬЗОВАТЕЛЯ/follow
 Authorization: Bearer {{token}}
 
+### Синхронизировать hardSkills из проектов
+POST {{base}}/users/me/sync-skills
+Authorization: Bearer {{token}}
+
 ### Создать проект
 POST {{base}}/projects
 Authorization: Bearer {{token}}
@@ -76,4 +80,49 @@ Authorization: Bearer {{token}}
 
 ### Мои избранные
 GET {{base}}/projects/favorites
+Authorization: Bearer {{token}}
+
+### AI — анализ проекта
+POST {{base}}/ai/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "project",
+  "projectId": "ВСТАВЬ_ID_ПРОЕКТА"
+}
+
+### AI — резюме-summary
+POST {{base}}/ai/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "resume"
+}
+
+### AI — анализ портфолио
+POST {{base}}/ai/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "portfolio"
+}
+
+### AI — идеи для проектов
+POST {{base}}/ai/reports
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reportType": "project_ideas"
+}
+
+### AI — мои отчёты
+GET {{base}}/ai/reports
+Authorization: Bearer {{token}}
+
+### AI — конкретный отчёт
+GET {{base}}/ai/reports/ВСТАВЬ_ID_ОТЧЁТА
 Authorization: Bearer {{token}}

@@ -13,6 +13,8 @@ import { UsersModule } from './users/users.module';
 import { ProjectsModule } from './projects/projects.module';
 import { ExportModule } from './export/export.module';
 import { GithubModule } from './github/github.module';
+import { AiModule } from './ai/ai.module';
+import { VisualizationModule } from './visualization/visualization.module';
 
 @Module({
   imports: [
@@ -29,7 +31,8 @@ import { GithubModule } from './github/github.module';
     ProjectsModule,
     ExportModule,
     GithubModule,
-    // AiModule,
+    AiModule,
+    VisualizationModule,
   ],
 })
 export class AppModule {}

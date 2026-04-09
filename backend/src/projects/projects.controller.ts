@@ -26,14 +26,14 @@ const multerStorage = diskStorage({
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
-  // Публичный — favorites до /:id
+  // /favorites до /:id, требует авторизацию
   @Get('favorites')
   @UseGuards(JwtAuthGuard)
   getMyFavorites(@CurrentUser() user: User) {
     return this.projectsService.getMyFavorites(user.id);
   }
 
-  // Публичный просмотр проекта (если авторизован — покажет isFavorited)
+  // Публичный — без токена isFavorited: false, с токеном — реальное значение
   @Get(':id')
   @UseGuards(JwtOptionalGuard)
   findOne(@Param('id') id: string, @CurrentUser() user: User | null) {

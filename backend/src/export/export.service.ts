@@ -89,22 +89,6 @@ export class ExportService {
         doc.moveDown();
       }
 
-      // --- Навыки ---
-      const hasSkills = profile.hardSkills.length || profile.softSkills.length || profile.tools.length;
-      if (hasSkills) {
-        this.section(doc, 'Навыки');
-        if (profile.hardSkills.length) {
-          this.skillRow(doc, 'Hard skills', profile.hardSkills);
-        }
-        if (profile.softSkills.length) {
-          this.skillRow(doc, 'Soft skills', profile.softSkills);
-        }
-        if (profile.tools.length) {
-          this.skillRow(doc, 'Инструменты', profile.tools);
-        }
-        doc.moveDown();
-      }
-
       // --- Контакты ---
       if (contacts.length) {
         this.section(doc, 'Контакты');

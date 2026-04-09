@@ -4,18 +4,22 @@ import { IsArray, IsOptional, IsString } from 'class-validator';
 export class UsersQueryDto {
   @IsOptional()
   @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsString()
   activityField?: string;
 
-  // ?stack=TypeScript&stack=React - ['TypeScript', 'React']
+  // фильтр по именам навыков из hardSkills
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
-  stack?: string[];
+  skills?: string[];
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
   @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
-  tools?: string[];
+  softSkills?: string[];
 }

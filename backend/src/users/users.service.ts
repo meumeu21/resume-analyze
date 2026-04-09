@@ -28,27 +28,42 @@ export class UsersService {
       .createQueryBuilder('profile')
       .where('profile.isProfilePublic = true');
 
+    if (query.search) {
+      qb.andWhere(
+        `(profile.nickname ILIKE :search
+          OR profile.firstName ILIKE :search
+          OR profile.lastName ILIKE :search
+          OR CONCAT(profile.firstName, ' ', profile.lastName) ILIKE :search)`,
+        { search: `%${query.search}%` },
+      );
+    }
+
     if (query.activityField) {
-      qb.andWhere('profile.activityField = :activityField', {
-        activityField: query.activityField,
-      });
+      qb.andWhere('profile.activityField = :activityField', { activityField: query.activityField });
     }
 
-    if (query.stack?.length) {
-      qb.andWhere('profile.hardSkills && :stack', { stack: query.stack });
+    if (query.skills?.length) {
+      qb.andWhere(
+        `EXISTS (
+          SELECT 1 FROM jsonb_array_elements(profile.skill_levels) AS s
+          WHERE s->>'name' = ANY(:skills)
+        )`,
+        { skills: query.skills },
+      );
     }
 
-    if (query.tools?.length) {
-      qb.andWhere('profile.tools && :tools', { tools: query.tools });
+    if (query.softSkills?.length) {
+      qb.andWhere('profile.softSkills && :softSkills', { softSkills: query.softSkills });
     }
 
-    const hasFilters = query.activityField || query.stack?.length || query.tools?.length;
+    const hasFilters = query.search || query.activityField
+      || query.skills?.length || query.softSkills?.length;
 
     if (!hasFilters) {
       qb.orderBy('RANDOM()');
     }
 
-    qb.take(10);
+    qb.take(20);
 
     const profiles = await qb.getMany();
     return Promise.all(profiles.map((p) => this.toUserCard(p, currentUserId)));
@@ -168,6 +183,29 @@ export class UsersService {
 
   // хелперы
 
+  // POST /users/me/sync-skills — добавляет стек из проектов в hardSkills (level=1 если нет)
+  async syncHardSkillsFromProjects(currentUser: User) {
+    const profile = await this.profileRepo.findOne({ where: { userId: currentUser.id } });
+    if (!profile) throw new NotFoundException('Профиль не найден');
+
+    const projects = await this.projectRepo.find({
+      where: { userId: currentUser.id },
+      select: ['stack'],
+    });
+
+    const fromProjects = [...new Set(projects.flatMap((p) => p.stack))];
+    const existingNames = new Set(profile.hardSkills.map((s) => s.name.toLowerCase()));
+
+    const newSkills = fromProjects
+      .filter((name) => !existingNames.has(name.toLowerCase()))
+      .map((name) => ({ name, level: 1 }));
+
+    profile.hardSkills = [...profile.hardSkills, ...newSkills];
+    return this.profileRepo.save(profile);
+  }
+
+  // хелперы
+
   private profileFields(profile: Profile) {
     return {
       nickname: profile.nickname,
@@ -177,8 +215,8 @@ export class UsersService {
       avatarUrl: profile.avatarUrl,
       bio: profile.bio,
       softSkills: profile.softSkills,
-      hardSkills: profile.hardSkills,
-      tools: profile.tools,
+      hardSkills: profile.hardSkills, // [{name, level}]
+      coordinates: profile.coordinates,
       activityField: profile.activityField,
       isProfilePublic: profile.isProfilePublic,
       updatedAt: profile.updatedAt,
@@ -199,8 +237,7 @@ export class UsersService {
       avatarUrl: profile.avatarUrl,
       activityField: profile.activityField,
       softSkills: profile.softSkills,
-      hardSkills: profile.hardSkills,
-      tools: profile.tools,
+      hardSkills: profile.hardSkills, // [{name, level}]
       followersCount,
       isFollowing: !!isFollowingRecord,
     };

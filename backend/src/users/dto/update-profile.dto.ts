@@ -1,7 +1,30 @@
 import {
-  IsArray, IsBoolean, IsOptional,
-  IsString, Length, Matches, MaxLength,
+  IsArray, IsBoolean, IsInt, IsNumber, IsObject,
+  IsOptional, IsString, Length, Matches, Max, MaxLength, Min, ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class HardSkillDto {
+  @IsString()
+  name!: string;
+
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  level!: number;
+}
+
+export class CoordinatesDto {
+  @IsNumber()
+  @Min(-5)
+  @Max(5)
+  x!: number;
+
+  @IsNumber()
+  @Min(-5)
+  @Max(5)
+  y!: number;
+}
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -41,13 +64,15 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsArray()
-  @IsString({ each: true })
-  hardSkills?: string[];
+  @ValidateNested({ each: true })
+  @Type(() => HardSkillDto)
+  hardSkills?: HardSkillDto[];
 
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  tools?: string[];
+  @IsObject()
+  @ValidateNested()
+  @Type(() => CoordinatesDto)
+  coordinates?: CoordinatesDto;
 
   @IsOptional()
   @IsBoolean()

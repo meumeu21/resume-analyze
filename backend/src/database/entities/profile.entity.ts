@@ -34,23 +34,26 @@ export class Profile {
   @Column({ type: 'text', nullable: true })
   bio: string | null;
 
-  // text[] — массив строк в PostgreSQL
   @Column({ name: 'soft_skills', type: 'text', array: true, default: [] })
   softSkills: string[];
 
-  @Column({ name: 'hard_skills', type: 'text', array: true, default: [] })
-  hardSkills: string[];
+  // [{name: "TypeScript", level: 4}, ...] — для radar chart и фильтрации
+  @Column({ name: 'skill_levels', type: 'jsonb', default: [] })
+  hardSkills: { name: string; level: number }[] = [];
 
-  @Column({ type: 'text', array: true, default: [] })
-  tools: string[];
+  // {x: -5..5, y: -5..5}
+  // x: низкоуровневое ↔ высокоуровневое
+  // y: продуктовый подход ↔ инженерный подход
+  @Column({ type: 'jsonb', nullable: true })
+  coordinates: { x: number; y: number } | null = null;
 
-  // определяется нейросетью из заранее заложенного списка
+  // определяется AI на основе проектов
   @Column({ name: 'activity_field', type: 'varchar', nullable: true })
-  activityField: string | null;
+  activityField!: string | null;
 
   @Column({ name: 'is_profile_public', default: true })
-  isProfilePublic: boolean;
+  isProfilePublic!: boolean;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

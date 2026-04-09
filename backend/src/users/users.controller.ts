@@ -40,6 +40,12 @@ export class UsersController {
     return this.usersService.updateContacts(user, dto);
   }
 
+  @Post('me/sync-skills')
+  @UseGuards(JwtAuthGuard)
+  syncSkills(@CurrentUser() user: User) {
+    return this.usersService.syncHardSkillsFromProjects(user);
+  }
+
   @Get(':id')
   @UseGuards(JwtOptionalGuard)
   findOne(@Param('id') id: string, @CurrentUser() user: User | null) {

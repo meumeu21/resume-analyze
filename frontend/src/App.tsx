@@ -1,16 +1,7 @@
-import './App.css'
+import LoginPage from "./pages/LoginPage";
 
 function App() {
-
-  return (
-    <>
-    <div>
-      <p>
-        бро...
-      </p>
-    </div>
-    </>
-  )
+  return <LoginPage />;
 }
 
-export default App
+export default App;

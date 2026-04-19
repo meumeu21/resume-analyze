@@ -1,0 +1,112 @@
+.login-page {
+  position: relative;
+  height: 100vh;
+  background: #f3f3f3;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Карточка */
+.card {
+  width: 400px;
+  padding: 30px;
+  background: #eaeaea;
+  border: 1px solid #aaa;
+  border-radius: 12px;
+  z-index: 2;
+
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.card h2 {
+  margin-bottom: 10px;
+}
+
+.card input {
+  padding: 10px;
+  border: 1px solid #999;
+  border-radius: 6px;
+}
+
+/* Кнопки */
+.login-btn {
+  background: black;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.secondary-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+}
+
+/* Шарики */
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: float 20s infinite linear;
+}
+
+.bubble1 {
+  width: 200px;
+  height: 200px;
+  background: #d8c4e8;
+  top: 10%;
+  left: 5%;
+}
+
+.bubble2 {
+  width: 80px;
+  height: 80px;
+  background: #a6d1e6;
+  top: 30%;
+  right: 20%;
+}
+
+.bubble3 {
+  width: 300px;
+  height: 300px;
+  background: #9ecae1;
+  bottom: 10%;
+  right: 10%;
+}
+
+.bubble4 {
+  width: 100px;
+  height: 100px;
+  background: #e6c79c;
+  top: 10%;
+  right: 5%;
+}
+
+.bubble5 {
+  width: 120px;
+  height: 120px;
+  background: #cfcfe8;
+  bottom: 20%;
+  left: 15%;
+}
+
+/* Анимация */
+@keyframes float {
+  0% {
+    transform: translateY(0px) translateX(0px);
+  }
+  50% {
+    transform: translateY(-40px) translateX(30px);
+  }
+  100% {
+    transform: translateY(0px) translateX(0px);
+  }
+}

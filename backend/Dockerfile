@@ -10,6 +10,7 @@ FROM base AS development
 COPY package*.json ./
 RUN npm ci
 COPY . .
+RUN npx tsc -p tsconfig.build.json
 EXPOSE 3000
 CMD ["npm", "run", "start:dev"]
 

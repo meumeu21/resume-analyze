@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { BullModule } from '@nestjs/bullmq';
 
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
@@ -22,6 +23,21 @@ import { VisualizationModule } from './visualization/visualization.module';
       isGlobal: true,
       load: [appConfig, databaseConfig, jwtConfig, githubConfig],
       validate,
+    }),
+
+    BullModule.forRootAsync({
+      useFactory: (config: ConfigService) => {
+        const raw = config.get<string>('REDIS_URL')!;
+        const url = new URL(raw);
+        return {
+          connection: {
+            host: url.hostname,
+            port: parseInt(url.port) || 6379,
+            password: url.password || undefined,
+          },
+        };
+      },
+      inject: [ConfigService],
     }),
 
     DatabaseModule,

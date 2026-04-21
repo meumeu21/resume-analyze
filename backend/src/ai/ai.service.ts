@@ -1,10 +1,13 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import Anthropic from '@anthropic-ai/sdk';
 import { Repository } from 'typeorm';
 import {
@@ -13,8 +16,11 @@ import {
 import { GithubRepo } from '../database/entities/github-repo.entity';
 import { GenerateReportDto } from './dto/generate-report.dto';
 
+export const AI_REPORTS_QUEUE = 'ai-reports';
+
 @Injectable()
 export class AiService {
+  private readonly logger = new Logger(AiService.name);
   private readonly client: Anthropic;
 
   constructor(
@@ -23,37 +29,26 @@ export class AiService {
     @InjectRepository(Profile) private readonly profileRepo: Repository<Profile>,
     @InjectRepository(Project) private readonly projectRepo: Repository<Project>,
     @InjectRepository(GithubRepo) private readonly githubRepoRepo: Repository<GithubRepo>,
+    @InjectQueue(AI_REPORTS_QUEUE) private readonly aiQueue: Queue,
   ) {
     this.client = new Anthropic({
       apiKey: this.config.get<string>('ANTHROPIC_API_KEY') ?? undefined,
     });
   }
 
+  // POST /ai/reports — создаёт PENDING-отчёт и ставит в очередь
   async generate(currentUser: User, dto: GenerateReportDto): Promise<AiReport> {
     const profile = await this.profileRepo.findOne({ where: { userId: currentUser.id } });
     if (!profile) throw new NotFoundException('Профиль не найден');
-
-    let project: Project | null = null;
-    let githubRepo: GithubRepo | null = null;
 
     if (dto.reportType === ReportType.PROJECT_SUMMARY) {
       if (!dto.projectId) {
         throw new BadRequestException('projectId обязателен для типа project_summary');
       }
-      project = await this.projectRepo.findOne({
+      const project = await this.projectRepo.findOne({
         where: { id: dto.projectId, userId: currentUser.id },
       });
       if (!project) throw new NotFoundException('Проект не найден');
-
-      if (project.githubRepoId) {
-        githubRepo = await this.githubRepoRepo.findOne({ where: { id: project.githubRepoId } });
-      }
-    }
-
-    // Для ACTIVITY_FIELD и IMPROVEMENTS нужны все проекты пользователя
-    let allProjects: Project[] = [];
-    if (dto.reportType !== ReportType.PROJECT_SUMMARY) {
-      allProjects = await this.projectRepo.find({ where: { userId: currentUser.id } });
     }
 
     const report = await this.reportRepo.save(
@@ -65,8 +60,40 @@ export class AiService {
       }),
     );
 
+    await this.aiQueue.add('process-report', { reportId: report.id });
+    this.logger.log(`AI report ${report.id} queued`);
+
+    return report;
+  }
+
+  // Вызывается воркером из очереди
+  async processReport(reportId: string): Promise<void> {
+    const report = await this.reportRepo.findOne({ where: { id: reportId } });
+    if (!report) return;
+
+    const profile = await this.profileRepo.findOne({ where: { userId: report.userId } });
+    if (!profile) {
+      report.status = ReportStatus.ERROR;
+      report.errorMessage = 'Профиль не найден';
+      await this.reportRepo.save(report);
+      return;
+    }
+
+    let project: Project | null = null;
+    let githubRepo: GithubRepo | null = null;
+    let allProjects: Project[] = [];
+
+    if (report.reportType === ReportType.PROJECT_SUMMARY && report.projectId) {
+      project = await this.projectRepo.findOne({ where: { id: report.projectId } });
+      if (project?.githubRepoId) {
+        githubRepo = await this.githubRepoRepo.findOne({ where: { id: project.githubRepoId } });
+      }
+    } else {
+      allProjects = await this.projectRepo.find({ where: { userId: report.userId } });
+    }
+
     try {
-      const prompt = this.buildPrompt(dto.reportType, profile, project, githubRepo, allProjects);
+      const prompt = this.buildPrompt(report.reportType, profile, project, githubRepo, allProjects);
       const message = await this.client.messages.create({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1500,
@@ -83,17 +110,18 @@ export class AiService {
       report.summary = text;
       report.rawResponse = message as unknown as Record<string, unknown>;
 
-      // Для ACTIVITY_FIELD — автоматически обновляем профиль
-      if (dto.reportType === ReportType.ACTIVITY_FIELD) {
+      if (report.reportType === ReportType.ACTIVITY_FIELD) {
         profile.activityField = text.trim().split('\n')[0].replace(/^[#*\s]+/, '');
         await this.profileRepo.save(profile);
       }
     } catch (err) {
       report.status = ReportStatus.ERROR;
       report.errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
+      this.logger.error(`AI report ${reportId} failed: ${report.errorMessage}`);
     }
 
-    return this.reportRepo.save(report);
+    await this.reportRepo.save(report);
+    this.logger.log(`AI report ${reportId} finished with status ${report.status}`);
   }
 
   async getMyReports(userId: string): Promise<AiReport[]> {
@@ -109,7 +137,6 @@ export class AiService {
     return report;
   }
 
-  // Получить публичные отчёты пользователя (для чужого профиля)
   async getPublicReports(targetUserId: string): Promise<AiReport[]> {
     return this.reportRepo.find({
       where: { userId: targetUserId, isPublic: true, status: ReportStatus.DONE },
@@ -117,7 +144,6 @@ export class AiService {
     });
   }
 
-  // Переключить видимость отчёта
   async toggleVisibility(id: string, userId: string): Promise<AiReport> {
     const report = await this.reportRepo.findOne({ where: { id, userId } });
     if (!report) throw new NotFoundException('Отчёт не найден');

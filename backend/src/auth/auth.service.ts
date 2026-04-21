@@ -7,11 +7,19 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
+import { createHash } from 'crypto';
 import { Repository } from 'typeorm';
 import { Profile, User } from '../database/entities';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
+import { RedisService } from '../redis/redis.service';
+
+const refreshKey = (userId: string) => `auth:refresh:${userId}`;
+
+export function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
+}
 
 @Injectable()
 export class AuthService {
@@ -20,6 +28,7 @@ export class AuthService {
     @InjectRepository(Profile) private readonly profileRepo: Repository<Profile>,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly redis: RedisService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -41,7 +50,9 @@ export class AuthService {
     const profile = this.profileRepo.create({ userId: user.id, nickname: dto.nickname });
     await this.profileRepo.save(profile);
 
-    return this.buildTokens(user);
+    const tokens = this.buildTokens(user);
+    await this.storeRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
   }
 
   async login(dto: LoginDto) {
@@ -55,11 +66,30 @@ export class AuthService {
       throw new UnauthorizedException('Неверный email или пароль');
     }
 
-    return this.buildTokens(user);
+    const tokens = this.buildTokens(user);
+    await this.storeRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
   }
 
   async refresh(user: User) {
-    return this.buildTokens(user);
+    const tokens = this.buildTokens(user);
+    await this.storeRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
+  }
+
+  async logout(userId: string) {
+    await this.redis.del(refreshKey(userId));
+  }
+
+  async validateRefreshToken(userId: string, rawToken: string): Promise<boolean> {
+    const stored = await this.redis.get<string>(refreshKey(userId));
+    return stored === hashToken(rawToken);
+  }
+
+  private async storeRefreshToken(userId: string, token: string): Promise<void> {
+    const decoded = this.jwtService.decode(token) as { exp: number };
+    const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+    await this.redis.set(refreshKey(userId), hashToken(token), ttl);
   }
 
   private buildTokens(user: User) {

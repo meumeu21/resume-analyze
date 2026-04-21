@@ -9,6 +9,15 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GithubAccount, GithubRepo } from '../database/entities';
+import { RedisService } from '../redis/redis.service';
+
+const ACCOUNT_TTL = 600;   // 10 минут
+const REPO_TTL = 1800;     // 30 минут
+
+const cacheKey = {
+  account: (userId: string) => `github:account:${userId}`,
+  repo: (owner: string, name: string) => `github:repo:${owner}/${name}`,
+};
 
 interface GithubRepoResponse {
   id: number;
@@ -31,6 +40,7 @@ export class GithubService {
     @InjectRepository(GithubRepo)
     private readonly repoRepo: Repository<GithubRepo>,
     private readonly config: ConfigService,
+    private readonly redis: RedisService,
   ) {}
 
   // POST /github/connect
@@ -64,6 +74,10 @@ export class GithubService {
       where: { userId },
       relations: ['repos'],
     });
+  }
+
+  private async invalidateAccountCache(userId: string) {
+    await this.redis.del(cacheKey.account(userId));
   }
 
   // POST /github/sync
@@ -110,17 +124,24 @@ export class GithubService {
     account.cachedAt = new Date();
     await this.accountRepo.save(account);
 
+    await this.invalidateAccountCache(userId);
+
     this.logger.log(`Синхронизировано ${saved.length} репозиториев для ${username}`);
     return saved;
   }
 
   // GET /github/account
   async getMyAccount(userId: string) {
+    const cached = await this.redis.get<GithubAccount>(cacheKey.account(userId));
+    if (cached) return cached;
+
     const account = await this.accountRepo.findOne({
       where: { userId },
       relations: ['repos'],
     });
     if (!account) throw new NotFoundException('GitHub аккаунт не привязан');
+
+    await this.redis.set(cacheKey.account(userId), account, ACCOUNT_TTL);
     return account;
   }
 
@@ -129,6 +150,7 @@ export class GithubService {
     const account = await this.accountRepo.findOne({ where: { userId } });
     if (!account) throw new NotFoundException('GitHub аккаунт не привязан');
     await this.accountRepo.remove(account);
+    await this.invalidateAccountCache(userId);
   }
 
   async fetchRepoByUrl(repoUrl: string): Promise<GithubRepo> {
@@ -137,6 +159,9 @@ export class GithubService {
       throw new BadRequestException('Некорректный URL репозитория GitHub');
     }
     const [, owner, repoName] = match;
+
+    const cached = await this.redis.get<GithubRepo>(cacheKey.repo(owner, repoName));
+    if (cached) return cached;
 
     const [repoData, languages, readmeExcerpt] = await Promise.all([
       this.githubFetch<GithubRepoResponse>(`/repos/${owner}/${repoName}`).catch(() => {
@@ -163,7 +188,9 @@ export class GithubService {
       { conflictPaths: ['githubRepoId'] },
     );
 
-    return this.repoRepo.findOne({ where: { githubRepoId: repoData.id } }) as Promise<GithubRepo>;
+    const repo = await this.repoRepo.findOne({ where: { githubRepoId: repoData.id } }) as GithubRepo;
+    await this.redis.set(cacheKey.repo(owner, repoName), repo, REPO_TTL);
+    return repo;
   }
 
   // github api helpers

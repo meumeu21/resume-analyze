@@ -39,8 +39,9 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
-  logout() {
-    // токены stateless — клиент просто удаляет их у себя
+  @UseGuards(JwtAuthGuard)
+  logout(@CurrentUser() user: User) {
+    return this.authService.logout(user.id);
   }
 
   @Get('me')

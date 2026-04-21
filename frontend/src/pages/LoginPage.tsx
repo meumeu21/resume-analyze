@@ -1,4 +1,5 @@
 import "./LoginPage.css";
+import Card from "../components/ProjectCard";
 
 function LoginPage() {
   return (
@@ -19,10 +20,14 @@ function LoginPage() {
 
         <button className="login-btn">Войти</button>
 
-        <button className="secondary-btn">
+        <button className="text-btn">
           Вы у нас первый раз?
         </button>
       </div>
+  
+      <Card title="Профиль">
+        <p>Информация о пользователе</p>
+      </Card>
     </div>
   );
 }

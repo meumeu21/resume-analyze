@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
@@ -24,6 +26,12 @@ import { VisualizationModule } from './visualization/visualization.module';
       load: [appConfig, databaseConfig, jwtConfig, githubConfig],
       validate,
     }),
+
+    ThrottlerModule.forRoot([
+      { name: 'default', ttl: 60_000, limit: 100 },
+      { name: 'auth', ttl: 60_000, limit: 5 },
+      { name: 'ai-generate', ttl: 3_600_000, limit: 10 },
+    ]),
 
     BullModule.forRootAsync({
       useFactory: (config: ConfigService) => {
@@ -49,6 +57,9 @@ import { VisualizationModule } from './visualization/visualization.module';
     GithubModule,
     AiModule,
     VisualizationModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}

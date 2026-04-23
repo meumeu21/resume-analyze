@@ -1,9 +1,11 @@
 import {
-  Body, Controller, Get, Param, Patch, Post, UseGuards,
+  Body, Controller, Get, Param, Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../database/entities';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { AiService } from './ai.service';
 import { GenerateReportDto } from './dto/generate-report.dto';
 
@@ -14,14 +16,15 @@ export class AiController {
 
   // POST /ai/reports — сгенерировать отчёт
   @Post('reports')
+  @Throttle({ 'ai-generate': { ttl: 3_600_000, limit: 10 } })
   generate(@CurrentUser() user: User, @Body() dto: GenerateReportDto) {
     return this.aiService.generate(user, dto);
   }
 
   // GET /ai/reports — мои отчёты
   @Get('reports')
-  getMyReports(@CurrentUser() user: User) {
-    return this.aiService.getMyReports(user.id);
+  getMyReports(@CurrentUser() user: User, @Query() pagination: PaginationDto) {
+    return this.aiService.getMyReports(user.id, pagination);
   }
 
   // GET /ai/reports/:id — конкретный отчёт

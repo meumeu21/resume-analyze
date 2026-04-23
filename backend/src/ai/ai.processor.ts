@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { AI_REPORTS_QUEUE, AiService } from './ai.service';
 
-@Processor(AI_REPORTS_QUEUE)
+@Processor(AI_REPORTS_QUEUE, { concurrency: 2 })
 export class AiProcessor extends WorkerHost {
   private readonly logger = new Logger(AiProcessor.name);
 
@@ -12,7 +12,15 @@ export class AiProcessor extends WorkerHost {
   }
 
   async process(job: Job<{ reportId: string }>): Promise<void> {
-    this.logger.log(`Processing AI report job ${job.id}, reportId=${job.data.reportId}`);
-    await this.aiService.processReport(job.data.reportId);
+    const { reportId } = job.data;
+    this.logger.log(`Processing AI report job ${job.id}, reportId=${reportId}`);
+
+    try {
+      await this.aiService.processReport(reportId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`AI report job ${job.id} failed (attempt ${job.attemptsMade + 1}): ${message}`);
+      throw err;
+    }
   }
 }

@@ -1,11 +1,12 @@
 import {
-  Body, Controller, Delete, Get,
+  BadRequestException, Body, Controller, Delete, Get,
   HttpCode, HttpStatus, Param, Patch,
   Post, UploadedFile, UseGuards, UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
+import { randomUUID } from 'crypto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtOptionalGuard } from '../auth/guards/jwt-optional.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -14,11 +15,20 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { ProjectsService } from './projects.service';
 
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'application/pdf',
+]);
+
 const multerStorage = diskStorage({
   destination: './uploads',
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${randomUUID()}${ext}`);
   },
 });
 
@@ -69,13 +79,23 @@ export class ProjectsController {
     FileInterceptor('file', {
       storage: multerStorage,
       limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(new BadRequestException(
+            `Недопустимый тип файла: ${file.mimetype}. Разрешены: изображения (JPEG, PNG, GIF, WebP, SVG) и PDF.`,
+          ), false);
+        }
+      },
     }),
   )
   uploadFile(
     @Param('id') id: string,
     @CurrentUser() user: User,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFile() file: Express.Multer.File | undefined,
   ) {
+    if (!file) throw new BadRequestException('Файл не загружен');
     return this.projectsService.uploadFile(id, user.id, file);
   }
 

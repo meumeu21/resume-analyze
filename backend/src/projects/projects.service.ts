@@ -70,9 +70,7 @@ export class ProjectsService {
     if (!project) throw new NotFoundException('Проект не найден');
     if (project.userId !== userId) throw new ForbiddenException();
 
-    for (const file of project.files) {
-      this.deleteFileFromDisk(file.fileUrl);
-    }
+    await Promise.all(project.files.map((file) => this.deleteFileFromDisk(file.fileUrl)));
 
     await this.projectRepo.remove(project);
   }
@@ -80,8 +78,14 @@ export class ProjectsService {
   // POST /projects/:id/files
   async uploadFile(projectId: string, userId: string, file: Express.Multer.File) {
     const project = await this.projectRepo.findOne({ where: { id: projectId } });
-    if (!project) throw new NotFoundException('Проект не найден');
-    if (project.userId !== userId) throw new ForbiddenException();
+    if (!project) {
+      await fs.promises.unlink(file.path).catch(() => {});
+      throw new NotFoundException('Проект не найден');
+    }
+    if (project.userId !== userId) {
+      await fs.promises.unlink(file.path).catch(() => {});
+      throw new ForbiddenException();
+    }
 
     const type = file.mimetype.startsWith('image/')
       ? ProjectFileType.IMAGE
@@ -94,7 +98,12 @@ export class ProjectsService {
       type,
     });
 
-    return this.fileRepo.save(projectFile);
+    try {
+      return await this.fileRepo.save(projectFile);
+    } catch (err) {
+      await fs.promises.unlink(file.path).catch(() => {});
+      throw err;
+    }
   }
 
   // DELETE /projects/:id/files/:fileId
@@ -106,7 +115,7 @@ export class ProjectsService {
     const file = await this.fileRepo.findOne({ where: { id: fileId, projectId } });
     if (!file) throw new NotFoundException('Файл не найден');
 
-    this.deleteFileFromDisk(file.fileUrl);
+    await this.deleteFileFromDisk(file.fileUrl);
     await this.fileRepo.remove(file);
   }
 
@@ -155,14 +164,8 @@ export class ProjectsService {
     return repo;
   }
 
-  private deleteFileFromDisk(fileUrl: string) {
-    try {
-      const filePath = path.join(process.cwd(), fileUrl);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-      }
-    } catch {
-      // логируем ошибку, так как файл может быть уже удален
-    }
+  private async deleteFileFromDisk(fileUrl: string): Promise<void> {
+    const filePath = path.join(process.cwd(), fileUrl);
+    await fs.promises.unlink(filePath).catch(() => {});
   }
 }

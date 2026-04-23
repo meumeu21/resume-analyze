@@ -14,6 +14,7 @@ import {
   AiReport, Profile, Project, ReportStatus, ReportType, User,
 } from '../database/entities';
 import { GithubRepo } from '../database/entities/github-repo.entity';
+import { PagedResult, PaginationDto } from '../common/dto/pagination.dto';
 import { GenerateReportDto } from './dto/generate-report.dto';
 
 export const AI_REPORTS_QUEUE = 'ai-reports';
@@ -60,7 +61,10 @@ export class AiService {
       }),
     );
 
-    await this.aiQueue.add('process-report', { reportId: report.id });
+    await this.aiQueue.add('process-report', { reportId: report.id }, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+    });
     this.logger.log(`AI report ${report.id} queued`);
 
     return report;
@@ -124,11 +128,18 @@ export class AiService {
     this.logger.log(`AI report ${reportId} finished with status ${report.status}`);
   }
 
-  async getMyReports(userId: string): Promise<AiReport[]> {
-    return this.reportRepo.find({
+  async getMyReports(userId: string, pagination: PaginationDto): Promise<PagedResult<AiReport>> {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 20;
+
+    const [data, total] = await this.reportRepo.findAndCount({
       where: { userId },
       order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+
+    return { data, total, page, limit };
   }
 
   async getReport(id: string, userId: string): Promise<AiReport> {
@@ -137,11 +148,18 @@ export class AiService {
     return report;
   }
 
-  async getPublicReports(targetUserId: string): Promise<AiReport[]> {
-    return this.reportRepo.find({
+  async getPublicReports(targetUserId: string, pagination: PaginationDto): Promise<PagedResult<AiReport>> {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 20;
+
+    const [data, total] = await this.reportRepo.findAndCount({
       where: { userId: targetUserId, isPublic: true, status: ReportStatus.DONE },
       order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+
+    return { data, total, page, limit };
   }
 
   async toggleVisibility(id: string, userId: string): Promise<AiReport> {

@@ -1,7 +1,8 @@
 import { Transform } from 'class-transformer';
 import { IsArray, IsOptional, IsString } from 'class-validator';
+import { PaginationDto } from '../../common/dto/pagination.dto';
 
-export class UsersQueryDto {
+export class UsersQueryDto extends PaginationDto {
   @IsOptional()
   @IsString()
   search?: string;
@@ -10,7 +11,6 @@ export class UsersQueryDto {
   @IsString()
   activityField?: string;
 
-  // фильтр по именам навыков из hardSkills
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

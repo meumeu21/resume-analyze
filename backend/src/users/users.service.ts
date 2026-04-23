@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import {
   ContactLink, Follow, Profile, Project, User,
 } from '../database/entities';
+import { PagedResult } from '../common/dto/pagination.dto';
 import { UpdateContactsDto } from './dto/update-contacts.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UsersQueryDto } from './dto/users-query.dto';
@@ -23,7 +24,10 @@ export class UsersService {
   ) {}
 
   // GET /users
-  async findAll(query: UsersQueryDto, currentUserId: string | null) {
+  async findAll(query: UsersQueryDto, currentUserId: string | null): Promise<PagedResult<object>> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
     const qb = this.profileRepo
       .createQueryBuilder('profile')
       .where('profile.isProfilePublic = true');
@@ -63,10 +67,12 @@ export class UsersService {
       qb.orderBy('RANDOM()');
     }
 
-    qb.take(20);
+    qb.skip((page - 1) * limit).take(limit);
 
-    const profiles = await qb.getMany();
-    return Promise.all(profiles.map((p) => this.toUserCard(p, currentUserId)));
+    const [profiles, total] = await qb.getManyAndCount();
+    const data = await Promise.all(profiles.map((p) => this.toUserCard(p, currentUserId)));
+
+    return { data, total, page, limit };
   }
 
   // GET /users/me

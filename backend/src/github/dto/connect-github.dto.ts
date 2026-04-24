@@ -6,5 +6,5 @@ export class ConnectGithubDto {
   @Matches(/^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$/, {
     message: 'Некорректный GitHub username',
   })
-  username: string;
+  username!: string;
 }

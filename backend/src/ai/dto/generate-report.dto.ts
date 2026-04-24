@@ -3,7 +3,7 @@ import { ReportType } from '../../database/entities/ai-report.entity';
 
 export class GenerateReportDto {
   @IsEnum(ReportType)
-  reportType: ReportType;
+  reportType!: ReportType;
 
   // Обязателен только для PROJECT_SUMMARY
   @IsOptional()

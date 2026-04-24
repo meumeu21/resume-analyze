@@ -6,7 +6,7 @@ import {
 export class CreateProjectDto {
   @IsString()
   @MaxLength(200)
-  title: string;
+  title!: string;
 
   @IsOptional()
   @IsString()

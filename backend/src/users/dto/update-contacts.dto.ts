@@ -7,10 +7,10 @@ import { ContactLinkType } from '../../database/entities';
 
 class ContactLinkDto {
   @IsEnum(ContactLinkType)
-  type: ContactLinkType;
+  type!: ContactLinkType;
 
   @IsString()
-  url: string;
+  url!: string;
 
   @IsOptional()
   @IsBoolean()
@@ -21,5 +21,5 @@ export class UpdateContactsDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ContactLinkDto)
-  contacts: ContactLinkDto[];
+  contacts!: ContactLinkDto[];
 }

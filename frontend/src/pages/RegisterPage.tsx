@@ -1,7 +1,5 @@
-import { Link } from "react-router-dom";
-
 import "./LoginPage.css";
-import Card from "../components/ProjectCard";
+import { Link } from "react-router-dom";
 
 function LoginPage() {
   return (
@@ -15,21 +13,17 @@ function LoginPage() {
 
       {/* Карточка */}
       <div className="card">
-        <h2>Добро пожаловать в CommIT!</h2>
+        <h2>Присоединяйтесь к CommIT!</h2>
 
         <input type="text" placeholder="Логин" />
         <input type="password" placeholder="Пароль" />
 
-        <button className="login-btn">Войти</button>
+        <button className="login-btn">Зарегистрироваться</button>
 
-        <Link to="/register" className="text-btn">
-          Вы у нас первый раз?
+        <Link to="/" className="text-btn">
+          Вы уже зарегистрированы?
         </Link>
       </div>
-  
-      <Card title="Профиль">
-        <p>Информация о пользователе</p>
-      </Card>
     </div>
   );
 }

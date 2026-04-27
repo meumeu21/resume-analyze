@@ -23,7 +23,6 @@ export class UsersService {
     @InjectRepository(Project) private readonly projectRepo: Repository<Project>,
   ) {}
 
-  // GET /users
   async findAll(query: UsersQueryDto, currentUserId: string | null): Promise<PagedResult<object>> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
@@ -75,7 +74,6 @@ export class UsersService {
     return { data, total, page, limit };
   }
 
-  // GET /users/me
   async getMyProfile(currentUser: User) {
     const profile = await this.profileRepo.findOne({
       where: { userId: currentUser.id },
@@ -100,7 +98,6 @@ export class UsersService {
     };
   }
 
-  // GET /users/:id
   async findOne(targetId: string, currentUserId: string | null) {
     const profile = await this.profileRepo.findOne({
       where: { userId: targetId, isProfilePublic: true },
@@ -129,7 +126,6 @@ export class UsersService {
     };
   }
 
-  // PATCH /users/me
   async updateProfile(currentUser: User, dto: UpdateProfileDto) {
     const profile = await this.profileRepo.findOne({
       where: { userId: currentUser.id },
@@ -145,7 +141,6 @@ export class UsersService {
     return this.profileRepo.save(profile);
   }
 
-  // PUT /users/me/contacts
   async updateContacts(currentUser: User, dto: UpdateContactsDto) {
     await this.contactRepo.delete({ userId: currentUser.id });
 
@@ -156,7 +151,6 @@ export class UsersService {
     return this.contactRepo.save(contacts);
   }
 
-  // POST /users/:id/follow
   async follow(currentUserId: string, targetId: string) {
     if (currentUserId === targetId) {
       throw new ConflictException('Нельзя подписаться на самого себя');
@@ -177,7 +171,6 @@ export class UsersService {
     await this.followRepo.save(follow);
   }
 
-  // DELETE /users/:id/follow
   async unfollow(currentUserId: string, targetId: string) {
     const follow = await this.followRepo.findOne({
       where: { followerId: currentUserId, followingId: targetId },
@@ -189,7 +182,6 @@ export class UsersService {
 
   // хелперы
 
-  // POST /users/me/sync-skills — добавляет стек из проектов в hardSkills (level=1 если нет)
   async syncHardSkillsFromProjects(currentUser: User) {
     const profile = await this.profileRepo.findOne({ where: { userId: currentUser.id } });
     if (!profile) throw new NotFoundException('Профиль не найден');
@@ -209,8 +201,6 @@ export class UsersService {
     profile.hardSkills = [...profile.hardSkills, ...newSkills];
     return this.profileRepo.save(profile);
   }
-
-  // хелперы
 
   private profileFields(profile: Profile) {
     return {

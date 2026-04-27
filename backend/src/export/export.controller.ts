@@ -25,7 +25,6 @@ export class ExportController {
     @InjectQueue(PDF_EXPORT_QUEUE) private readonly pdfQueue: Queue,
   ) {}
 
-  // Синхронное скачивание — обратная совместимость
   @Get('resume/:userId')
   async downloadResume(
     @Param('userId') userId: string,
@@ -41,7 +40,6 @@ export class ExportController {
     res.end(buffer);
   }
 
-  // Поставить генерацию PDF в очередь
   @Post('resume/:userId')
   async queueResume(
     @Param('userId') userId: string,
@@ -54,7 +52,6 @@ export class ExportController {
     return { jobId: job.id };
   }
 
-  // Статус задачи
   @Get('jobs/:jobId')
   async getJobStatus(@Param('jobId') jobId: string) {
     const job = await this.pdfQueue.getJob(jobId);
@@ -68,7 +65,6 @@ export class ExportController {
     };
   }
 
-  // Скачать готовый PDF
   @Get('jobs/:jobId/file')
   async downloadJobFile(
     @Param('jobId') jobId: string,
@@ -91,7 +87,6 @@ export class ExportController {
     res.end(buffer);
   }
 
-  // Пустой шаблон
   @Get('template')
   async downloadTemplate(@Res() res: Response) {
     const buffer = await this.exportService.generateBlankTemplate();

@@ -9,14 +9,12 @@ import { VisualizationService } from './visualization.service';
 export class VisualizationController {
   constructor(private readonly visualizationService: VisualizationService) {}
 
-  // Свои данные (все проекты, включая приватные)
   @Get('me')
   @UseGuards(JwtAuthGuard)
   getMyVisualization(@CurrentUser() user: User) {
     return this.visualizationService.getMyVisualizationData(user.id);
   }
 
-  // Чужой профиль (только публичные проекты)
   @Get(':userId')
   @UseGuards(JwtOptionalGuard)
   getVisualization(@Param('userId') userId: string) {

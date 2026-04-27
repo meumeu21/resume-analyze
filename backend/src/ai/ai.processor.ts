@@ -13,13 +13,13 @@ export class AiProcessor extends WorkerHost {
 
   async process(job: Job<{ reportId: string }>): Promise<void> {
     const { reportId } = job.data;
-    this.logger.log(`Processing AI report job ${job.id}, reportId=${reportId}`);
+    this.logger.log(`Ии-отчет с ${job.id}, reportId=${reportId}`);
 
     try {
       await this.aiService.processReport(reportId);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.error(`AI report job ${job.id} failed (attempt ${job.attemptsMade + 1}): ${message}`);
+      this.logger.error(`Ии-отчет ${job.id} не получился (попытка ${job.attemptsMade + 1}): ${message}`);
       throw err;
     }
   }

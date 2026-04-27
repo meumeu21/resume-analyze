@@ -37,7 +37,6 @@ export class AiService {
     });
   }
 
-  // POST /ai/reports — создаёт PENDING-отчёт и ставит в очередь
   async generate(currentUser: User, dto: GenerateReportDto): Promise<AiReport> {
     const profile = await this.profileRepo.findOne({ where: { userId: currentUser.id } });
     if (!profile) throw new NotFoundException('Профиль не найден');
@@ -70,7 +69,6 @@ export class AiService {
     return report;
   }
 
-  // Вызывается воркером из очереди
   async processReport(reportId: string): Promise<void> {
     const report = await this.reportRepo.findOne({ where: { id: reportId } });
     if (!report) return;
@@ -171,8 +169,8 @@ export class AiService {
 
   private systemPrompt(): string {
     return `Ты опытный технический рекрутер и карьерный консультант для IT-специалистов.
-Отвечай только на русском языке. Будь конкретным и практичным.
-Не добавляй вступлений вроде "Конечно!" или "Отличный вопрос!". Сразу переходи к делу.`;
+            Отвечай только на русском языке. Будь конкретным и практичным.
+            Не добавляй вступлений вроде "Конечно!" или "Отличный вопрос!". Сразу переходи к делу.`;
   }
 
   private buildPrompt(
@@ -196,30 +194,23 @@ export class AiService {
         p.role ? `  Роль: ${p.role}` : null,
       ].filter(Boolean).join('\n')).join('\n\n');
 
-      return `Данные разработчика:
-${profileBase}
-
-Проекты:
-${projectsInfo || 'Проекты не указаны'}
-
-Определи сферу деятельности этого разработчика (например: "Backend-разработчик", "Fullstack-разработчик", "Frontend-разработчик", "ML-инженер" и т.д.).
-Ответ: одна короткая фраза — название сферы деятельности. Без пояснений.`;
+      return `Данные разработчика: ${profileBase}
+              Проекты: ${projectsInfo || 'Проекты не указаны'}
+              Определи сферу деятельности этого разработчика (например: "Backend-разработчик", "Fullstack-разработчик", "Frontend-разработчик", "ML-инженер" и т.д.).
+              Ответ: одна короткая фраза — название сферы деятельности. Без пояснений.`;
     }
 
     if (type === ReportType.IMPROVEMENTS) {
       const projectsStack = [...new Set(allProjects.flatMap((p) => p.stack))];
       const allSkills = [...new Set([...profile.hardSkills.map((s) => s.name), ...projectsStack])];
 
-      return `Разработчик со следующими навыками и технологиями:
-${allSkills.length ? allSkills.join(', ') : 'навыки не указаны'}
-${profile.activityField ? `Направление: ${profile.activityField}` : ''}
-
-Составь список рекомендаций "Что изучить дальше":
-1. Назови 3-5 конкретных технологий или языков, которые логично освоить следующими
-2. Для каждой технологии — одно предложение почему она важна для этого специалиста
-3. Укажи один бесплатный ресурс для изучения каждой технологии
-
-Формат: нумерованный список.`;
+      return `Разработчик со следующими навыками и технологиями: ${allSkills.length ? allSkills.join(', ') : 'навыки не указаны'}
+              ${profile.activityField ? `Направление: ${profile.activityField}` : ''}
+              Составь список рекомендаций "Что изучить дальше":
+              1. Назови 3-5 конкретных технологий или языков, которые логично освоить следующими
+              2. Для каждой технологии — одно предложение почему она важна для этого специалиста
+              3. Укажи один бесплатный ресурс для изучения каждой технологии
+              Формат: нумерованный список.`;
     }
 
     if (type === ReportType.PROJECT_SUMMARY && project) {
@@ -243,12 +234,11 @@ ${profile.activityField ? `Направление: ${profile.activityField}` : '
       ].filter(Boolean).join('\n') : null;
 
       return `Проект разработчика:
-${projectInfo}
-${githubInfo ? `\nДанные из GitHub:\n${githubInfo}` : ''}
-
-Напиши профессиональное резюме этого проекта для портфолио (3-4 предложения).
-Опиши: что это за проект, какие технические решения применялись, в чём ценность проекта.
-Пиши в третьем лице, как будто описываешь чужой проект. Без заголовков.`;
+              ${projectInfo}
+              ${githubInfo ? `\nДанные из GitHub:\n${githubInfo}` : ''}
+              Напиши профессиональное резюме этого проекта для портфолио (3-4 предложения).
+              Опиши: что это за проект, какие технические решения применялись, в чём ценность проекта.
+              Пиши в третьем лице, как будто описываешь чужой проект. Без заголовков.`;
     }
 
     return profileBase;

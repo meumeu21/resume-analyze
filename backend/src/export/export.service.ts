@@ -55,8 +55,6 @@ export class ExportService {
     return this.buildTemplatePdf();
   }
 
-  // --- PDF builders ---
-
   private buildResumePdf(data: {
     profile: Profile;
     contacts: ContactLink[];
@@ -73,7 +71,6 @@ export class ExportService {
       const name = [profile.firstName, profile.lastName].filter(Boolean).join(' ')
         || profile.nickname;
 
-      // --- Шапка ---
       doc.font('Bold').fontSize(22).fillColor('#222222').text(name, { align: 'center' });
       doc.font('Regular').fontSize(12).fillColor('#777777')
         .text(`@${profile.nickname}`, { align: 'center' });
@@ -85,7 +82,6 @@ export class ExportService {
 
       this.divider(doc);
 
-      // --- Bio ---
       if (profile.bio) {
         this.section(doc, 'О себе');
         doc.font('Regular').fontSize(11).fillColor('#333333')
@@ -93,7 +89,6 @@ export class ExportService {
         doc.moveDown(0.8);
       }
 
-      // --- Soft skills ---
       if (profile.softSkills.length) {
         this.section(doc, 'Soft skills');
         doc.font('Regular').fontSize(10).fillColor('#333333')
@@ -101,16 +96,14 @@ export class ExportService {
         doc.moveDown(0.8);
       }
 
-      // --- Radar chart (hard skills) ---
       if (profile.hardSkills.length >= 3) {
         this.section(doc, 'Hard skills');
         const chartY = doc.y + 10;
-        const cx = 297; // центр A4 по горизонтали
+        const cx = 297;
         this.drawRadarChart(doc, profile.hardSkills, cx, chartY + 110, 90);
         doc.y = chartY + 230;
         doc.moveDown(0.5);
       } else if (profile.hardSkills.length > 0) {
-        // Меньше 3 навыков — просто список
         this.section(doc, 'Hard skills');
         for (const s of profile.hardSkills) {
           doc.font('Regular').fontSize(10).fillColor('#333333')
@@ -119,7 +112,6 @@ export class ExportService {
         doc.moveDown(0.8);
       }
 
-      // --- Coordinates graph ---
       if (profile.coordinates) {
         this.section(doc, 'Позиционирование разработчика');
         const cx = 297;
@@ -129,7 +121,6 @@ export class ExportService {
         doc.moveDown(0.5);
       }
 
-      // --- Граф интересов (облако из проектов) ---
       const interests = this.buildInterestCloud(projects);
       if (interests.length) {
         this.section(doc, 'Сфера интересов');
@@ -137,7 +128,6 @@ export class ExportService {
         doc.moveDown(0.8);
       }
 
-      // --- Контакты ---
       if (contacts.length) {
         this.section(doc, 'Контакты');
         for (const c of contacts) {
@@ -150,7 +140,6 @@ export class ExportService {
 
       this.divider(doc);
 
-      // --- Проекты ---
       if (projects.length) {
         this.section(doc, 'Проекты');
         for (const p of projects) {
@@ -189,7 +178,6 @@ export class ExportService {
     });
   }
 
-  // --- Radar chart ---
   private drawRadarChart(
     doc: Doc,
     skills: { name: string; level: number }[],
@@ -201,7 +189,6 @@ export class ExportService {
     const step = (2 * Math.PI) / n;
     const angleOf = (i: number) => i * step - Math.PI / 2;
 
-    // Сетка (5 уровней)
     for (let lvl = 1; lvl <= 5; lvl++) {
       const rLvl = (lvl / 5) * r;
       const pts = skills.map((_, i) => {
@@ -218,7 +205,6 @@ export class ExportService {
       doc.restore();
     }
 
-    // Оси
     for (let i = 0; i < n; i++) {
       const a = angleOf(i);
       doc.save()
@@ -228,7 +214,6 @@ export class ExportService {
         .restore();
     }
 
-    // Закрашенная фигура навыков
     const skillPts = skills.map((s, i) => {
       const a = angleOf(i);
       const rS = (s.level / 5) * r;
@@ -249,7 +234,6 @@ export class ExportService {
       .strokeColor('#2c7be5').lineWidth(1.5).stroke();
     doc.restore();
 
-    // Подписи навыков
     for (let i = 0; i < n; i++) {
       const a = angleOf(i);
       const labelR = r + 18;
@@ -260,7 +244,6 @@ export class ExportService {
     }
   }
 
-  // --- Coordinates graph ---
   private drawCoordinatesGraph(
     doc: Doc,
     coords: { x: number; y: number },
@@ -268,7 +251,6 @@ export class ExportService {
     cy: number,
     r: number,
   ) {
-    // Оси
     doc.save()
       .moveTo(cx - r, cy).lineTo(cx + r, cy)
       .strokeColor('#aaaaaa').lineWidth(1).stroke()
@@ -278,7 +260,6 @@ export class ExportService {
       .strokeColor('#aaaaaa').lineWidth(1).stroke()
       .restore();
 
-    // Стрелки
     const arr = 5;
     doc.save()
       .moveTo(cx + r, cy).lineTo(cx + r - arr, cy - arr / 2)
@@ -291,14 +272,12 @@ export class ExportService {
       .strokeColor('#aaaaaa').lineWidth(1).stroke()
       .restore();
 
-    // Метки осей
     doc.font('Regular').fontSize(7).fillColor('#666666')
       .text('Низкоуровневое', cx - r - 2, cy + 3, { width: 70, align: 'right' })
       .text('Высокоуровневое', cx + r - 68, cy + 3, { width: 70 })
       .text('Инженерный', cx - 25, cy - r - 14, { width: 50, align: 'center' })
       .text('Продуктовый', cx - 25, cy + r + 4, { width: 50, align: 'center' });
 
-    // Квадранты (лёгкая заливка)
     const colors = ['#eaf2ff', '#fff4ea', '#eafff0', '#fff0f5'];
     const quads = [
       { dx: 0, dy: -r, w: r, h: r },
@@ -313,7 +292,6 @@ export class ExportService {
         .restore();
     });
 
-    // Точка разработчика
     const px = cx + (coords.x / 5) * r;
     const py = cy - (coords.y / 5) * r;
     doc.save()
@@ -326,7 +304,6 @@ export class ExportService {
       .restore();
   }
 
-  // --- Interest cloud ---
   private buildInterestCloud(projects: Project[]) {
     const weights = new Map<string, number>();
     for (const p of projects) {
@@ -357,7 +334,6 @@ export class ExportService {
         y += lineH;
       }
 
-      // Badge background
       doc.save()
         .roundedRect(x, y, textW, lineH - 4, 4)
         .fillColor('#eef4ff').fillOpacity(0.8).fill()
@@ -374,8 +350,6 @@ export class ExportService {
 
     doc.y = y + lineH + 4;
   }
-
-  // --- Template ---
 
   private buildTemplatePdf(): Promise<Buffer> {
     return new Promise((resolve) => {
@@ -431,8 +405,6 @@ export class ExportService {
       doc.end();
     });
   }
-
-  // --- Helpers ---
 
   private registerFonts(doc: Doc) {
     doc.registerFont('Regular', this.fontRegular);

@@ -15,16 +15,13 @@ export interface InterestEdge {
 }
 
 export interface VisualizationData {
-  // Radar chart — навыки с уровнями
   skills: { name: string; level: number }[];
 
-  // Relationship diagram — граф интересов
   interests: {
     nodes: InterestNode[];
     edges: InterestEdge[];
   };
 
-  // Coordinates graph
   coordinates: { x: number; y: number } | null;
 }
 
@@ -53,7 +50,6 @@ export class VisualizationService {
     };
   }
 
-  // Для своего профиля — без проверки isPublic
   async getMyVisualizationData(userId: string): Promise<VisualizationData> {
     const profile = await this.profileRepo.findOne({ where: { userId } });
     if (!profile) throw new NotFoundException('Профиль не найден');
@@ -71,12 +67,10 @@ export class VisualizationService {
   }
 
   private buildInterestGraph(projects: Pick<Project, 'stack' | 'tags'>[]) {
-    // Собираем все термины из stack + tags каждого проекта
     const projectTerms = projects.map((p) =>
       [...new Set([...p.stack, ...p.tags].map((t) => t.toLowerCase().trim()).filter(Boolean))],
     );
 
-    // Считаем вес каждого термина (в скольких проектах встречается)
     const nodeWeights = new Map<string, number>();
     for (const terms of projectTerms) {
       for (const term of terms) {
@@ -84,7 +78,6 @@ export class VisualizationService {
       }
     }
 
-    // Считаем рёбра (совместное появление в одном проекте)
     const edgeWeights = new Map<string, number>();
     for (const terms of projectTerms) {
       for (let i = 0; i < terms.length; i++) {

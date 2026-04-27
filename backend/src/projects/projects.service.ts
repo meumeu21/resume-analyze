@@ -24,7 +24,6 @@ export class ProjectsService {
     private readonly githubService: GithubService,
   ) {}
 
-  // GET /projects/:id
   async findOne(id: string, currentUserId: string | null) {
     const project = await this.projectRepo.findOne({
       where: { id },
@@ -45,13 +44,11 @@ export class ProjectsService {
     return { ...project, isFavorited: !!isFavorited, favoritesCount };
   }
 
-  // POST /projects
   async create(userId: string, dto: CreateProjectDto) {
     const project = this.projectRepo.create({ ...dto, userId });
     return this.projectRepo.save(project);
   }
 
-  // PATCH /projects/:id
   async update(id: string, userId: string, dto: UpdateProjectDto) {
     const project = await this.projectRepo.findOne({ where: { id } });
     if (!project) throw new NotFoundException('Проект не найден');
@@ -61,7 +58,6 @@ export class ProjectsService {
     return this.projectRepo.save(project);
   }
 
-  // DELETE /projects/:id
   async remove(id: string, userId: string) {
     const project = await this.projectRepo.findOne({
       where: { id },
@@ -75,7 +71,6 @@ export class ProjectsService {
     await this.projectRepo.remove(project);
   }
 
-  // POST /projects/:id/files
   async uploadFile(projectId: string, userId: string, file: Express.Multer.File) {
     const project = await this.projectRepo.findOne({ where: { id: projectId } });
     if (!project) {
@@ -106,7 +101,6 @@ export class ProjectsService {
     }
   }
 
-  // DELETE /projects/:id/files/:fileId
   async removeFile(projectId: string, fileId: string, userId: string) {
     const project = await this.projectRepo.findOne({ where: { id: projectId } });
     if (!project) throw new NotFoundException('Проект не найден');
@@ -119,7 +113,6 @@ export class ProjectsService {
     await this.fileRepo.remove(file);
   }
 
-  // POST /projects/:id/favorite
   async addFavorite(projectId: string, userId: string) {
     const project = await this.projectRepo.findOne({ where: { id: projectId, isPublic: true } });
     if (!project) throw new NotFoundException('Проект не найден');
@@ -131,14 +124,12 @@ export class ProjectsService {
     await this.favoriteRepo.save(this.favoriteRepo.create({ userId, projectId }));
   }
 
-  // DELETE /projects/:id/favorite
   async removeFavorite(projectId: string, userId: string) {
     const fav = await this.favoriteRepo.findOne({ where: { userId, projectId } });
     if (!fav) throw new NotFoundException('Не найдено в избранном');
     await this.favoriteRepo.remove(fav);
   }
 
-  // GET /projects/favorites
   async getMyFavorites(userId: string) {
     const favorites = await this.favoriteRepo.find({
       where: { userId },
@@ -148,7 +139,6 @@ export class ProjectsService {
     return favorites.map((f) => f.project);
   }
 
-  // POST /projects/:id/fetch-github
   async fetchGithubData(projectId: string, userId: string) {
     const project = await this.projectRepo.findOne({ where: { id: projectId } });
     if (!project) throw new NotFoundException('Проект не найден');

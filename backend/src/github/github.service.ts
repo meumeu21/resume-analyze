@@ -11,8 +11,8 @@ import { Repository } from 'typeorm';
 import { GithubAccount, GithubRepo } from '../database/entities';
 import { RedisService } from '../redis/redis.service';
 
-const ACCOUNT_TTL = 600;   // 10 минут
-const REPO_TTL = 1800;     // 30 минут
+const ACCOUNT_TTL = 600;
+const REPO_TTL = 1800;
 
 const cacheKey = {
   account: (userId: string) => `github:account:${userId}`,
@@ -43,7 +43,6 @@ export class GithubService {
     private readonly redis: RedisService,
   ) {}
 
-  // POST /github/connect
   async connect(userId: string, username: string) {
     const ghUser = await this.githubFetch<{ login: string }>(
       `/users/${username}`,
@@ -58,7 +57,6 @@ export class GithubService {
       throw new ConflictException('Этот GitHub аккаунт уже привязан к другому пользователю');
     }
 
-    // upsert аккаунта
     let account = await this.accountRepo.findOne({ where: { userId } });
     if (account) {
       account.githubUsername = ghUser.login;
@@ -80,7 +78,6 @@ export class GithubService {
     await this.redis.del(cacheKey.account(userId));
   }
 
-  // POST /github/sync
   async syncRepos(userId: string) {
     const account = await this.accountRepo.findOne({ where: { userId } });
     if (!account) throw new NotFoundException('GitHub аккаунт не привязан');
@@ -98,7 +95,6 @@ export class GithubService {
         this.fetchReadmeExcerpt(username, repo.name),
       ]);
 
-      // upsert по githubRepoId
       await this.repoRepo.upsert(
         {
           githubAccountId: account.id,
@@ -130,7 +126,6 @@ export class GithubService {
     return saved;
   }
 
-  // GET /github/account
   async getMyAccount(userId: string) {
     const cached = await this.redis.get<GithubAccount>(cacheKey.account(userId));
     if (cached) return cached;
@@ -145,7 +140,6 @@ export class GithubService {
     return account;
   }
 
-  // DELETE /github/disconnect
   async disconnect(userId: string) {
     const account = await this.accountRepo.findOne({ where: { userId } });
     if (!account) throw new NotFoundException('GitHub аккаунт не привязан');
@@ -192,8 +186,6 @@ export class GithubService {
     await this.redis.set(cacheKey.repo(owner, repoName), repo, REPO_TTL);
     return repo;
   }
-
-  // github api helpers
 
   private getHeaders(): HeadersInit {
     const token = this.config.get<string | null>('github.token');

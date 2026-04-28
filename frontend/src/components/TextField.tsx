@@ -17,13 +17,13 @@ function TextField({ title, text }: TextFieldProps) {
   return (
     <div className="textField">
         <div className="textField-header">
-            <h2>{title}</h2>
+            <h2 className="profile-h2">{title}</h2>
             <button className={`textField-button ${isOpen ? "open" : ""}`} onClick={toggleOpen}>▼</button>
         </div>
 
         {isOpen && (
             <div className="textField-content">
-                <p className="textField-text">{text}</p>
+                <p className="textField-text text">{text}</p>
             </div>
             )
         }

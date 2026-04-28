@@ -1,0 +1,30 @@
+.prohile-header{
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.profile-avatar{
+    display: flex;
+    width: 25%;
+}
+
+.avatar-image{
+    width: 100%;
+    border-radius: 999px;
+}
+
+.profile-username{
+    font-size: 48px;
+}
+
+.contact-profile{
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.contact-profile__type{
+    font-weight: 700;
+}

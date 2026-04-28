@@ -1,0 +1,22 @@
+p {
+    margin: 0;
+}
+
+.container{
+    width: 1380px;
+    margin: 0 auto;
+}
+
+.text{
+    font-size: 20px;
+}
+
+.link{
+    text-decoration: none;
+    color: black;
+}
+
+.link:hover{
+    text-decoration: underline;
+    color: black;
+}

@@ -20,3 +20,39 @@ p {
     text-decoration: underline;
     color: black;
 }
+
+.button{
+    background: #000;
+    color: #FFF;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 30px;
+
+    cursor: pointer;
+    transition: 1s;
+}
+
+.button:hover{
+    background: linear-gradient(90deg, #ECEBFF, #FAE2FF, #BEEBFF, #FFE6BD);
+    color: #000;
+
+    transition: 1.2s;
+}
+
+.button-light{
+    background: none;
+    border-radius: 999px;
+    padding: 10px 30px;
+
+    cursor: pointer;
+    transition: 1s;
+
+    border: 1px solid #000;
+    color: #000;
+}
+
+.button-light:hover{
+    transition: 1s;
+
+    border: 1px solid #FAE2FF;
+}

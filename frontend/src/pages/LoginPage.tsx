@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import "./LoginPage.css";
+import "../css/LoginPage.css";
 import Card from "../components/ProjectCard";
 
 function LoginPage() {

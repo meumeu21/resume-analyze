@@ -8,7 +8,7 @@ type TextFieldProps = {
 };
 
 function TextField({ title, text }: TextFieldProps) {
-  const [isOpen, setisOpen] = useState(false);
+  const [isOpen, setisOpen] = useState(true);
 
   const toggleOpen = () => {
     setisOpen(!isOpen);

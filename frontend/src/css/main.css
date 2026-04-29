@@ -2,6 +2,10 @@ p {
     margin: 0;
 }
 
+body{
+    margin: 0 auto
+}
+
 .container{
     width: 1380px;
     margin: 0 auto;

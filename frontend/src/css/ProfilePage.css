@@ -15,12 +15,12 @@
     flex-direction: column;
     gap: 30px;
 
-    padding-top: 30px;
+    /*padding-top: 30px;*/
 }
 
 .profile-avatar{
     display: flex;
-    width: 23%;
+    width: 25%;
 }
 
 .avatar-image{

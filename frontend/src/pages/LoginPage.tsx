@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 
 import "../css/LoginPage.css";
-import Card from "../components/ProjectCard";
 
 function LoginPage() {
   return (
@@ -26,10 +25,6 @@ function LoginPage() {
           Вы у нас первый раз?
         </Link>
       </div>
-  
-      <Card title="Профиль">
-        <p>Информация о пользователе</p>
-      </Card>
     </div>
   );
 }

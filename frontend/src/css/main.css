@@ -31,6 +31,7 @@ body{
     border: none;
     border-radius: 999px;
     padding: 10px 30px;
+    text-decoration: none;
 
     cursor: pointer;
     transition: 1s;
@@ -39,6 +40,7 @@ body{
 .button:hover{
     background: linear-gradient(90deg, #ECEBFF, #FAE2FF, #BEEBFF, #FFE6BD);
     color: #000;
+    text-decoration: none;
 
     transition: 1.2s;
 }
@@ -59,4 +61,28 @@ body{
     transition: 1s;
 
     border: 1px solid #FAE2FF;
+}
+
+.project-preview{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 20px;
+
+    border: 1px solid #000;
+    border-radius: 10px;
+
+    margin-bottom: 10px;
+}
+
+.project-preview__wrap{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.project-preview__title{
+    margin: 0;
 }

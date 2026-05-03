@@ -1,8 +1,25 @@
+import { Link } from "react-router-dom";
+import Header from "../components/Header";
+import ProjectPreview from "../components/ProjectPreview";
+
+import "../css/main.css"
+
 function Favourites() {
     return (
-        <div>
-            <h1>Избранное</h1>
-        </div>
+        <body>
+            <Header username="ewiwiwii" />
+
+            <div className="container">
+                <h1 className="page-h1">Избранное</h1>
+
+                <Link to={"/profile"} className="text link">Назад</Link>
+
+                <ProjectPreview title="Проект 1" description="Описание проекта 1" author="ewiwiwii" color="#FFF" link="/project" />
+                <ProjectPreview title="Проект 1" description="Описание проекта 1" author="ewiwiwii" color="#ECEBFF" link="/project" />
+                <ProjectPreview title="Проект 1" description="Описание проекта 1" author="ewiwiwii" color="#FFF" link="/project" />
+                <ProjectPreview title="Проект 1" description="Описание проекта 1" author="ewiwiwii" color="#FFE6BD" link="/project" />
+            </div>
+        </body>
     )
 }
 

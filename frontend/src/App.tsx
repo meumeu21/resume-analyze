@@ -6,6 +6,7 @@ import ProfilePage from "./pages/ProfilePage";
 import Subscriptions from "./pages/Subscriptions";
 import Subscriptors from "./pages/Subscriptors";
 import Favourites from "./pages/Favourites";
+import Project from "./pages/Project";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/subscriptions" element={<Subscriptions />} />
         <Route path="/subscriptors" element={<Subscriptors />} />
         <Route path="/favourites" element={<Favourites />} />
+        <Route path="/project" element={<Project />} />
       </Routes>
     </BrowserRouter>
   );

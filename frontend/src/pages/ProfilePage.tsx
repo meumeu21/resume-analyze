@@ -4,6 +4,7 @@ import TextField from "../components/TextField";
 import ContactProfile from "../components/ContactProfile";
 import ProfileMetrics from "../components/ProfileMetrics";
 import Header from "../components/Header";
+import ProjectPreview from "../components/ProjectPreview";
 
 import avatar from "../images/avatar-profile.jpg";
 import starIcon from "../images/icons/ai-star.svg";
@@ -50,6 +51,10 @@ function ProfilePage() {
 
           <div className="profile-content">
             <TextField title="Обо мне" text="Я няшка вкусняшка! Я хочу додобоны очень сильно и кофе из кофейни и домой пойти лежать ничего не делать и быть кайфулей" />
+            <div className="profile-content__projects-container">
+              <ProjectPreview title="Проект 1" description="Описание проекта 1" author="ewiwiwii" color="#FFF" link="/project" />
+              <ProjectPreview title="Проект 1" description="Описание проекта 1" author="ewiwiwii" color="#ECEBFF" link="/project" />
+            </div>
             <TextField title="Soft Skills" text="Я няшка вкусняшка! Я хочу додобоны очень сильно и кофе из кофейни и домой пойти лежать ничего не делать и быть кайфулей" />
             <TextField title="Hard Skills" text="Я няшка вкусняшка! Я хочу додобоны очень сильно и кофе из кофейни и домой пойти лежать ничего не делать и быть кайфулей" />
           </div>

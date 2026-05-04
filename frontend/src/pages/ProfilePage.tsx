@@ -33,6 +33,7 @@ const CONTACT_LABEL: Record<string, string> = {
   other: 'Контакт',
 };
 
+
 function ProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { user, signOut, accessToken } = useAuth();
@@ -64,8 +65,8 @@ function ProfilePage() {
   }, [id, accessToken, isOwn]);
 
   const profile = isOwn ? myProfile : otherProfile;
-  const nickname = profile?.nickname ?? 'Пользователь';
-  const avatarSrc = profile?.avatarUrl ?? avatar;
+  const nickname = profile?.nickname ?? (isOwn ? user?.profile?.nickname : undefined) ?? 'Пользователь';
+  const avatarSrc = profile?.avatarUrl ?? (isOwn ? user?.profile?.avatarUrl : undefined) ?? avatar;
   const contacts: ContactLink[] = (profile?.contacts ?? []) as ContactLink[];
   const softSkillsText = profile?.softSkills?.length ? profile.softSkills.join(', ') : null;
   const hardSkillsText = profile?.hardSkills?.length
@@ -79,18 +80,19 @@ function ProfilePage() {
       if (following) {
         await unfollowUser(id, accessToken);
         setFollowing(false);
-        setOtherProfile((p) => p ? { ...p, followersCount: p.followersCount - 1 } : p);
+        setOtherProfile((p) => p ? { ...p, followersCount: (p.followersCount ?? 1) - 1 } : p);
       } else {
         await followUser(id, accessToken);
         setFollowing(true);
-        setOtherProfile((p) => p ? { ...p, followersCount: p.followersCount + 1 } : p);
+        setOtherProfile((p) => p ? { ...p, followersCount: (p.followersCount ?? 0) + 1 } : p);
       }
     } catch {
-
+      // ignore
     } finally {
       setFollowLoading(false);
     }
   }
+
 
   return (
     <>
@@ -98,10 +100,13 @@ function ProfilePage() {
 
       <div className="container">
         <div className="profile-page">
+
           <div className="profile-header">
+
             <div className="profile-avatar">
               <img src={avatarSrc} alt="Avatar" className="avatar-image" />
             </div>
+
             <div className="profile-header-info">
               <div className="profile-header__top">
                 <h1 className="profile-username">{nickname}</h1>
@@ -117,16 +122,27 @@ function ProfilePage() {
 
                 {/* подписчики, подписки и избранное. у другого пользователя показываются только подписчики (пока что) */}
                 <div className="profile-header__metrics">
-                  <ProfileMetrics type="subs" number={profile?.followersCount ?? 0} />
-                  {isOwn && (
+                  {isOwn ? (
                     <>
-                      <ProfileMetrics type="subsrciptions" number={(myProfile as MyProfileResponse | null)?.followingCount ?? 0} />
-                      <ProfileMetrics type="favourites" number={(myProfile as MyProfileResponse | null)?.favoritesCount ?? 0} />
+                      <ProfileMetrics type="subs" number={myProfile?.followersCount ?? 0} />
+                      <ProfileMetrics type="subsrciptions" number={myProfile?.followingCount ?? 0} />
+                      <ProfileMetrics type="favourites" number={myProfile?.favoritesCount ?? 0} />
+                    </>
+                  ) : (
+                    <>
+                      {otherProfile?.followersCount != null && (
+                        <ProfileMetrics type="subs" number={otherProfile.followersCount} />
+                      )}
+                      {otherProfile?.followingCount != null && (
+                        <ProfileMetrics type="subsrciptions" number={otherProfile.followingCount} />
+                      )}
+                      {otherProfile?.favoritesCount != null && (
+                        <ProfileMetrics type="favourites" number={otherProfile.favoritesCount} />
+                      )}
                     </>
                   )}
                 </div>
 
-                {/* isOwn (свой профиль) показывает кнопки «Редактировать» и «Выйти» */}
                 <div className="edit-buttons">
                   {isOwn ? (
                     <>
@@ -143,6 +159,7 @@ function ProfilePage() {
                     </button>
                   )}
                 </div>
+
               </div>
 
               {contacts.length > 0 && (
@@ -158,14 +175,15 @@ function ProfilePage() {
                 </div>
               )}
             </div>
+            
           </div>
-
+          
           {/* делится на isOwn (свой профиль) и профиль другого пользователя */}
           <div className="profile-content">
             {isOwn ? (
               <>
-                {myProfile?.bio !== undefined && (
-                  <TextField title="Обо мне" text={myProfile.bio || 'Расскажите о себе'} />
+                {(myProfile !== null || user?.profile != null) && (
+                  <TextField title="Обо мне" text={(myProfile?.bio ?? user?.profile?.bio ?? '') || 'Расскажите о себе'} />
                 )}
                 <div className="profile-content__projects-container">
                   <ProjectPreview title="Проект 1" description="Описание проекта 1" author={nickname} color="#FFF" link="/project" />

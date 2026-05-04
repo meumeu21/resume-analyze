@@ -15,6 +15,9 @@ export interface MyProfileResponse {
   followingCount: number;
   favoritesCount: number;
   contacts: ContactLink[];
+  isFollowersPublic: boolean;
+  isFollowingPublic: boolean;
+  isFavoritesPublic: boolean;
 }
 
 export interface UserProfileResponse {
@@ -27,7 +30,9 @@ export interface UserProfileResponse {
   hardSkills: { name: string; level: number }[];
   firstName: string | null;
   lastName: string | null;
-  followersCount: number;
+  followersCount: number | null;
+  followingCount: number | null;
+  favoritesCount: number | null;
   isFollowing: boolean;
   contacts: ContactLink[];
   publicProjects: unknown[];
@@ -56,6 +61,18 @@ export function getUserProfile(userId: string, accessToken?: string | null) {
   return request<UserProfileResponse>(`/api/users/${userId}`, {
     method: 'GET',
     headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+  });
+}
+
+export function updateMyProfile(accessToken: string, data: Partial<{
+  isFollowersPublic: boolean;
+  isFollowingPublic: boolean;
+  isFavoritesPublic: boolean;
+}>) {
+  return request<void>('/api/users/me', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify(data),
   });
 }
 

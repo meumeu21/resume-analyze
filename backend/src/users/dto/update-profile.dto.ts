@@ -77,4 +77,16 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsBoolean()
   isProfilePublic?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isFollowersPublic?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isFollowingPublic?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  isFavoritesPublic?: boolean;
 }

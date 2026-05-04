@@ -107,22 +107,27 @@ export class UsersService {
     });
     if (!profile) throw new NotFoundException('Пользователь не найден');
 
-    const [contacts, publicProjects, followersCount, isFollowing] = await Promise.all([
-      this.contactRepo.find({ where: { userId: targetId, isPublic: true } }),
-      this.projectRepo.find({
-        where: { userId: targetId, isPublic: true },
-        order: { createdAt: 'DESC' },
-      }),
-      this.followRepo.count({ where: { followingId: targetId } }),
-      currentUserId
-        ? this.followRepo.findOne({ where: { followerId: currentUserId, followingId: targetId } })
-        : Promise.resolve(null),
-    ]);
+    const [contacts, publicProjects, followersCount, followingCount, favoritesCount, isFollowing] =
+      await Promise.all([
+        this.contactRepo.find({ where: { userId: targetId, isPublic: true } }),
+        this.projectRepo.find({
+          where: { userId: targetId, isPublic: true },
+          order: { createdAt: 'DESC' },
+        }),
+        this.followRepo.count({ where: { followingId: targetId } }),
+        this.followRepo.count({ where: { followerId: targetId } }),
+        this.favoriteRepo.count({ where: { userId: targetId } }),
+        currentUserId
+          ? this.followRepo.findOne({ where: { followerId: currentUserId, followingId: targetId } })
+          : Promise.resolve(null),
+      ]);
 
     return {
       userId: targetId,
       ...this.profileFields(profile),
-      followersCount,
+      followersCount: profile.isFollowersPublic ? followersCount : null,
+      followingCount: profile.isFollowingPublic ? followingCount : null,
+      favoritesCount: profile.isFavoritesPublic ? favoritesCount : null,
       isFollowing: !!isFollowing,
       contacts,
       publicProjects,
@@ -218,6 +223,9 @@ export class UsersService {
       coordinates: profile.coordinates,
       activityField: profile.activityField,
       isProfilePublic: profile.isProfilePublic,
+      isFollowersPublic: profile.isFollowersPublic,
+      isFollowingPublic: profile.isFollowingPublic,
+      isFavoritesPublic: profile.isFavoritesPublic,
       updatedAt: profile.updatedAt,
     };
   }

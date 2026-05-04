@@ -54,6 +54,15 @@ export class Profile {
   @Column({ name: 'is_profile_public', default: true })
   isProfilePublic!: boolean;
 
+  @Column({ name: 'is_followers_public', default: true })
+  isFollowersPublic!: boolean;
+
+  @Column({ name: 'is_following_public', default: true })
+  isFollowingPublic!: boolean;
+
+  @Column({ name: 'is_favorites_public', default: true })
+  isFavoritesPublic!: boolean;
+
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 }

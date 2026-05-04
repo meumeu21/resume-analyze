@@ -5,13 +5,16 @@ import ContactProfile from "../components/ContactProfile";
 import ProfileMetrics from "../components/ProfileMetrics";
 import Header from "../components/Header";
 import ProjectPreview from "../components/ProjectPreview";
+import { useAuth } from "../context/AuthContext";
 
 import avatar from "../images/avatar-profile.jpg";
 import starIcon from "../images/icons/ai-star.svg";
 
 function ProfilePage() {
-  return ( 
-    <body>
+  const { signOut } = useAuth();
+
+  return (
+    <>
       <Header username="ewiwiwii" />
     
       <div className="container">
@@ -36,7 +39,7 @@ function ProfilePage() {
                 </div>
                 <div className="edit-buttons">
                   <button className="button text fc">Редактировать</button>
-                  <button className="button-light text fc">Выйти</button>
+                  <button className="button-light text fc" onClick={signOut}>Выйти</button>
                 </div>
               </div>
               
@@ -60,7 +63,7 @@ function ProfilePage() {
           </div>
         </div>
       </div>
-    </body>
+    </>
   );
 }
 

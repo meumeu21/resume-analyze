@@ -56,7 +56,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: npm run start:dev
+    command: sh -c "npm run build && npm run start:dev"
 
   frontend:
     build:
@@ -67,6 +67,7 @@ services:
     restart: unless-stopped
     environment:
       VITE_API_URL: ${BACKEND_URL}
+      API_TARGET: http://backend:3000
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
     volumes:

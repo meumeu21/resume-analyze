@@ -22,6 +22,12 @@
   gap: 15px;
 }
 
+.card form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
 .card h2 {
   margin-bottom: 10px;
 }
@@ -40,6 +46,17 @@
   border: none;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-text {
+  color: #d32f2f;
+  font-size: 13px;
+  margin: 0;
 }
 
 .text-btn {

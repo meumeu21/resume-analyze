@@ -8,6 +8,7 @@ import Subscriptions from './pages/Subscriptions';
 import Subscriptors from './pages/Subscriptors';
 import Favourites from './pages/Favourites';
 import Project from './pages/Project';
+import Developers from './pages/Developers';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { accessToken, isLoading } = useAuth();
@@ -33,6 +34,7 @@ function AppRoutes() {
       <Route path="/subscriptors" element={<ProtectedRoute><Subscriptors /></ProtectedRoute>} />
       <Route path="/favourites" element={<ProtectedRoute><Favourites /></ProtectedRoute>} />
       <Route path="/project" element={<ProtectedRoute><Project /></ProtectedRoute>} />
+      <Route path="/developers" element={<ProtectedRoute><Developers /></ProtectedRoute>} />
     </Routes>
   );
 }

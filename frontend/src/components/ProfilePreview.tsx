@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 
+import "../css/ProfilePreview.css";
+
 import starIcon from "../images/icons/ai-star.svg";
 
 type ProfilePreviewProps = {
@@ -9,25 +11,24 @@ type ProfilePreviewProps = {
   linkToProfile: string;
   numOfSubs: string;
   numOfProjects: string;
-  color: string
 };
 
-function ProfilePreview({ username, AIdescription, linkToAvatar, linkToProfile, numOfSubs, numOfProjects, color }: ProfilePreviewProps) {
+function ProfilePreview({ username, AIdescription, linkToAvatar, linkToProfile, numOfSubs, numOfProjects }: ProfilePreviewProps) {
     return (
-        <div className="project-preview profile-preview" style={{ backgroundColor: color }}>
+        <div className="profile-preview">
             <div className="profile-preview__data">
                 <img src={linkToAvatar} className="profile-preview__avatar"></img>
                 <div className="profile-preview__info">
                     <div className="profile-preview__name-data">
-                        <h3 className="profile-preview__name">{username}</h3>
-                        <div className="profile-preview__description container">
+                        <h3 className="profile-preview__name"><Link to={linkToProfile} className="link">{username}</Link></h3>
+                        <div className="profile-preview__description">
                             <img src={starIcon} alt="Star Icon" className="star-icon" />
-                            <p className="profile-class__text">{AIdescription}</p>
+                            <p className="profile-preview__class">{AIdescription}</p>
                         </div>
                     </div>
                     <div className="profile-preview__numbers-data">
-                        <p className="profile-preview__numbers">{numOfSubs} подписчиков</p>
-                        <p className="profile-preview__numbers">{numOfProjects} проектов</p>
+                        <p className="profile-preview__numbers text">{numOfSubs} подписчиков</p>
+                        <p className="profile-preview__numbers text">{numOfProjects} проектов</p>
                     </div>
                 </div>
             </div>

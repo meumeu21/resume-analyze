@@ -1,7 +1,7 @@
 import {
   Body, Controller, Get, Param, Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../database/entities';
@@ -9,6 +9,7 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 import { AiService } from './ai.service';
 import { GenerateReportDto } from './dto/generate-report.dto';
 
+@SkipThrottle({ auth: true })
 @Controller('ai')
 @UseGuards(JwtAuthGuard)
 export class AiController {

@@ -21,7 +21,7 @@ function RegisterPage() {
     try {
       const tokens = await register(email, password, nickname);
       await signIn(tokens);
-      navigate('/profile');
+      navigate('/users/me');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Ошибка регистрации');
     } finally {

@@ -20,7 +20,7 @@ function LoginPage() {
     try {
       const tokens = await login(email, password);
       await signIn(tokens);
-      navigate('/profile');
+      navigate('/users/me');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Ошибка входа');
     } finally {

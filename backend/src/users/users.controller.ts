@@ -3,6 +3,7 @@ import {
   HttpCode, HttpStatus, Param, Patch,
   Post, Put, Query, UseGuards,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { JwtOptionalGuard } from '../auth/guards/jwt-optional.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -12,6 +13,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UsersQueryDto } from './dto/users-query.dto';
 import { UsersService } from './users.service';
 
+@SkipThrottle({ auth: true })
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

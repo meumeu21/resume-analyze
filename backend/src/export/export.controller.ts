@@ -8,6 +8,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import type { Response } from 'express';
@@ -17,6 +18,7 @@ import { User } from '../database/entities';
 import { ExportService, PDF_EXPORT_QUEUE } from './export.service';
 import { PdfJobData } from './export.processor';
 
+@SkipThrottle({ auth: true })
 @Controller('export')
 @UseGuards(JwtAuthGuard)
 export class ExportController {

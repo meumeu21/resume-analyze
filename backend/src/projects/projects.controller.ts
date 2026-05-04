@@ -3,6 +3,7 @@ import {
   HttpCode, HttpStatus, Param, Patch,
   Post, UploadedFile, UseGuards, UseInterceptors,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
@@ -32,6 +33,7 @@ const multerStorage = diskStorage({
   },
 });
 
+@SkipThrottle({ auth: true })
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}

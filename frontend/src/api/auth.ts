@@ -3,13 +3,27 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
+export interface ContactLink {
+  id: string;
+  type: 'github' | 'telegram' | 'linkedin' | 'website' | 'other';
+  url: string;
+  isPublic: boolean;
+}
+
 export interface MeResponse {
   id: string;
   email: string;
   profile: {
     nickname: string;
     avatarUrl: string | null;
+    bio: string | null;
+    activityField: string | null;
+    softSkills: string[];
+    hardSkills: { name: string; level: number }[];
+    firstName: string | null;
+    lastName: string | null;
   };
+  contactLinks: ContactLink[];
 }
 
 async function request<T>(url: string, options: RequestInit): Promise<T> {

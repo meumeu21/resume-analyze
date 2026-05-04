@@ -11,9 +11,9 @@ function Subscriptions() {
             <div className="container">
                 <h1 className="page-h1">Подписки</h1>
 
-                <Link to={"/profile"} className="text link">Назад</Link>
+                <Link to={"/users/me"} className="text link">Назад</Link>
 
-                <ProfilePreview username="User user" AIdescription="Backend-разработчик" linkToAvatar="../images/avatar-profile.jpg" linkToProfile="/profile" numOfSubs="11" numOfProjects="5" color="#FFF"></ProfilePreview>
+                <ProfilePreview username="User user" AIdescription="Backend-разработчик" linkToAvatar="../images/avatar-profile.jpg" linkToProfile="/users/me" numOfSubs="11" numOfProjects="5" color="#FFF"></ProfilePreview>
             </div>
         </body>
     )

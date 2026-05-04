@@ -16,7 +16,7 @@ function Header({ username }: HeaderProps) {
                     <Link to="/" className="header__menu-item special text">Нейросеть</Link>
                     <Link to="/" className="header__menu-item text">Разработчики</Link>
                 </div>
-                <Link to="/profile" className="header__menu-item text">{username}</Link>
+                <Link to="/users/me" className="header__menu-item text">{username}</Link>
             </div>
         </nav>
     )

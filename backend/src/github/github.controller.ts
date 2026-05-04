@@ -2,12 +2,14 @@ import {
   Body, Controller, Delete, Get,
   HttpCode, HttpStatus, Post, UseGuards,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User } from '../database/entities';
 import { ConnectGithubDto } from './dto/connect-github.dto';
 import { GithubService } from './github.service';
 
+@SkipThrottle({ auth: true })
 @Controller('github')
 @UseGuards(JwtAuthGuard)
 export class GithubController {

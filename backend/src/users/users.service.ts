@@ -6,7 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
-  ContactLink, Follow, Profile, Project, User,
+  ContactLink, Favorite, Follow, Profile, Project, User,
 } from '../database/entities';
 import { PagedResult } from '../common/dto/pagination.dto';
 import { UpdateContactsDto } from './dto/update-contacts.dto';
@@ -21,6 +21,7 @@ export class UsersService {
     @InjectRepository(Follow) private readonly followRepo: Repository<Follow>,
     @InjectRepository(ContactLink) private readonly contactRepo: Repository<ContactLink>,
     @InjectRepository(Project) private readonly projectRepo: Repository<Project>,
+    @InjectRepository(Favorite) private readonly favoriteRepo: Repository<Favorite>,
   ) {}
 
   async findAll(query: UsersQueryDto, currentUserId: string | null): Promise<PagedResult<object>> {
@@ -80,11 +81,12 @@ export class UsersService {
     });
     if (!profile) throw new NotFoundException('Профиль не найден');
 
-    const [contacts, projects, followersCount, followingCount] = await Promise.all([
+    const [contacts, projects, followersCount, followingCount, favoritesCount] = await Promise.all([
       this.contactRepo.find({ where: { userId: currentUser.id } }),
       this.projectRepo.find({ where: { userId: currentUser.id }, order: { createdAt: 'DESC' } }),
       this.followRepo.count({ where: { followingId: currentUser.id } }),
       this.followRepo.count({ where: { followerId: currentUser.id } }),
+      this.favoriteRepo.count({ where: { userId: currentUser.id } }),
     ]);
 
     return {
@@ -93,6 +95,7 @@ export class UsersService {
       ...this.profileFields(profile),
       followersCount,
       followingCount,
+      favoritesCount,
       contacts,
       projects,
     };

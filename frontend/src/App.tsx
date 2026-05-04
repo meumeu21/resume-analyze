@@ -19,7 +19,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function GuestRoute({ children }: { children: React.ReactNode }) {
   const { accessToken, isLoading } = useAuth();
   if (isLoading) return null;
-  if (accessToken) return <Navigate to="/profile" replace />;
+  if (accessToken) return <Navigate to="/users/me" replace />;
   return <>{children}</>;
 }
 
@@ -28,7 +28,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<GuestRoute><LoginPage /></GuestRoute>} />
       <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
-      <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="/users/:id" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
       <Route path="/subscriptors" element={<ProtectedRoute><Subscriptors /></ProtectedRoute>} />
       <Route path="/favourites" element={<ProtectedRoute><Favourites /></ProtectedRoute>} />

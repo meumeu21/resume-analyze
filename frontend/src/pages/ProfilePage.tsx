@@ -1,65 +1,190 @@
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import "../css/ProfilePage.css";
-import "../css/main.css"
+import "../css/main.css";
 import TextField from "../components/TextField";
 import ContactProfile from "../components/ContactProfile";
 import ProfileMetrics from "../components/ProfileMetrics";
 import Header from "../components/Header";
 import ProjectPreview from "../components/ProjectPreview";
 import { useAuth } from "../context/AuthContext";
+import { getMyProfile, getUserProfile, followUser, unfollowUser } from "../api/users";
+import type { MyProfileResponse, UserProfileResponse } from "../api/users";
+import type { ContactLink } from "../api/auth";
 
 import avatar from "../images/avatar-profile.jpg";
 import starIcon from "../images/icons/ai-star.svg";
 
+function contactHandle(type: string, url: string): string {
+  try {
+    const path = new URL(url).pathname.replace(/^\//, '').split('/').filter(Boolean).pop() ?? '';
+    if (type === 'telegram' || type === 'github') return `@${path}`;
+    return path || url;
+  } catch {
+    return url;
+  }
+}
+
+const CONTACT_LABEL: Record<string, string> = {
+  github: 'GitHub',
+  telegram: 'Telegram',
+  linkedin: 'LinkedIn',
+  website: 'Сайт',
+  other: 'Контакт',
+};
+
 function ProfilePage() {
-  const { signOut } = useAuth();
+  const { id } = useParams<{ id: string }>();
+  const { user, signOut, accessToken } = useAuth();
+  const navigate = useNavigate();
+
+  const isOwn = id === 'me';
+
+  const [myProfile, setMyProfile] = useState<MyProfileResponse | null>(null);
+  const [otherProfile, setOtherProfile] = useState<UserProfileResponse | null>(null);
+  const [following, setFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOwn && user?.id && id === user.id) {
+      navigate('/users/me', { replace: true });
+    }
+  }, [id, user?.id, isOwn, navigate]);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    if (isOwn) {
+      getMyProfile(accessToken).then(setMyProfile).catch(() => {});
+    } else if (id) {
+      getUserProfile(id, accessToken).then((p) => {
+        setOtherProfile(p);
+        setFollowing(p.isFollowing);
+      }).catch(() => {});
+    }
+  }, [id, accessToken, isOwn]);
+
+  const profile = isOwn ? myProfile : otherProfile;
+  const nickname = profile?.nickname ?? 'Пользователь';
+  const avatarSrc = profile?.avatarUrl ?? avatar;
+  const contacts: ContactLink[] = (profile?.contacts ?? []) as ContactLink[];
+  const softSkillsText = profile?.softSkills?.length ? profile.softSkills.join(', ') : null;
+  const hardSkillsText = profile?.hardSkills?.length
+    ? profile.hardSkills.map((s) => s.name).join(', ')
+    : null;
+
+  async function handleFollow() {
+    if (!accessToken || !id) return;
+    setFollowLoading(true);
+    try {
+      if (following) {
+        await unfollowUser(id, accessToken);
+        setFollowing(false);
+        setOtherProfile((p) => p ? { ...p, followersCount: p.followersCount - 1 } : p);
+      } else {
+        await followUser(id, accessToken);
+        setFollowing(true);
+        setOtherProfile((p) => p ? { ...p, followersCount: p.followersCount + 1 } : p);
+      }
+    } catch {
+
+    } finally {
+      setFollowLoading(false);
+    }
+  }
 
   return (
     <>
-      <Header username="ewiwiwii" />
-    
+      <Header username={nickname} />
+
       <div className="container">
         <div className="profile-page">
           <div className="profile-header">
             <div className="profile-avatar">
-              <img src={avatar} alt="Avatar" className="avatar-image" />
+              <img src={avatarSrc} alt="Avatar" className="avatar-image" />
             </div>
             <div className="profile-header-info">
               <div className="profile-header__top">
-                <h1 className="profile-username">Профиль пользователя</h1>
-                <div className="profile-class">
-                  <img src={starIcon} alt="Star Icon" className="star-icon" />
-                  <p className="profile-class__text">Data engeneer</p>
-                </div>
+                <h1 className="profile-username">{nickname}</h1>
+                {profile?.activityField && (
+                  <div className="profile-class">
+                    <img src={starIcon} alt="Star Icon" className="star-icon" />
+                    <p className="profile-class__text">{profile.activityField}</p>
+                  </div>
+                )}
               </div>
+
               <div className="profile-layer-two">
+
+                {/* подписчики, подписки и избранное. у другого пользователя показываются только подписчики (пока что) */}
                 <div className="profile-header__metrics">
-                  <ProfileMetrics type="subs" number={120} />
-                  <ProfileMetrics type="subsrciptions" number={80} />
-                  <ProfileMetrics type="favourites" number={50} />
+                  <ProfileMetrics type="subs" number={profile?.followersCount ?? 0} />
+                  {isOwn && (
+                    <>
+                      <ProfileMetrics type="subsrciptions" number={(myProfile as MyProfileResponse | null)?.followingCount ?? 0} />
+                      <ProfileMetrics type="favourites" number={(myProfile as MyProfileResponse | null)?.favoritesCount ?? 0} />
+                    </>
+                  )}
                 </div>
+
+                {/* isOwn (свой профиль) показывает кнопки «Редактировать» и «Выйти» */}
                 <div className="edit-buttons">
-                  <button className="button text fc">Редактировать</button>
-                  <button className="button-light text fc" onClick={signOut}>Выйти</button>
+                  {isOwn ? (
+                    <>
+                      <button className="button text fc">Редактировать</button>
+                      <button className="button-light text fc" onClick={signOut}>Выйти</button>
+                    </>
+                  ) : (
+                    <button
+                      className={following ? 'button-light text fc' : 'button text fc'}
+                      onClick={handleFollow}
+                      disabled={followLoading || !accessToken}
+                    >
+                      {following ? 'Отписаться' : 'Подписаться'}
+                    </button>
+                  )}
                 </div>
               </div>
-              
-              <div className="profile-header__contacts">
-                <ContactProfile type="Telegram" link="https://t.me/ewiwiwii" id="@ewiwiwii" />
-                <ContactProfile type="Instagram" link="https://t.me/ewiwiwii" id="@ewiwiwii" />
-                <ContactProfile type="LinkedIn" link="https://t.me/ewiwiwii" id="@ewiwiwii" />
-              </div>
-              <button className="button text">Подписаться</button>
+
+              {contacts.length > 0 && (
+                <div className="profile-header__contacts">
+                  {contacts.map((c) => (
+                    <ContactProfile
+                      key={c.id}
+                      type={CONTACT_LABEL[c.type] ?? c.type}
+                      link={c.url}
+                      id={contactHandle(c.type, c.url)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
+          {/* делится на isOwn (свой профиль) и профиль другого пользователя */}
           <div className="profile-content">
-            <TextField title="Обо мне" text="Я няшка вкусняшка! Я хочу додобоны очень сильно и кофе из кофейни и домой пойти лежать ничего не делать и быть кайфулей" />
-            <div className="profile-content__projects-container">
-              <ProjectPreview title="Проект 1" description="Описание проекта 1" author="ewiwiwii" color="#FFF" link="/project" />
-              <ProjectPreview title="Проект 1" description="Описание проекта 1" author="ewiwiwii" color="#ECEBFF" link="/project" />
-            </div>
-            <TextField title="Soft Skills" text="Я няшка вкусняшка! Я хочу додобоны очень сильно и кофе из кофейни и домой пойти лежать ничего не делать и быть кайфулей" />
-            <TextField title="Hard Skills" text="Я няшка вкусняшка! Я хочу додобоны очень сильно и кофе из кофейни и домой пойти лежать ничего не делать и быть кайфулей" />
+            {isOwn ? (
+              <>
+                {myProfile?.bio !== undefined && (
+                  <TextField title="Обо мне" text={myProfile.bio || 'Расскажите о себе'} />
+                )}
+                <div className="profile-content__projects-container">
+                  <ProjectPreview title="Проект 1" description="Описание проекта 1" author={nickname} color="#FFF" link="/project" />
+                  <ProjectPreview title="Проект 1" description="Описание проекта 1" author={nickname} color="#ECEBFF" link="/project" />
+                </div>
+                {softSkillsText !== undefined && (
+                  <TextField title="Soft Skills" text={softSkillsText || 'Расскажите о своих софт-скиллах'} />
+                )}
+                {hardSkillsText !== undefined && (
+                  <TextField title="Hard Skills" text={hardSkillsText || 'Расскажите о своих хард-скиллах'} />
+                )}
+              </>
+            ) : (
+              <>
+                {otherProfile?.bio && <TextField title="Обо мне" text={otherProfile.bio} />}
+                {softSkillsText && <TextField title="Soft Skills" text={softSkillsText} />}
+                {hardSkillsText && <TextField title="Hard Skills" text={hardSkillsText} />}
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import Footer from "../components/Footer";
 import Header from "../components/Header";
 
 import "../css/main.css"
@@ -9,6 +10,7 @@ function Developers() {
       <div className="container">
         <h1>Разработчики</h1>
       </div>
+      <Footer />
     </body>
   );
 }

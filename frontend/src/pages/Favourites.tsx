@@ -3,6 +3,7 @@ import Header from "../components/Header";
 import ProjectPreview from "../components/ProjectPreview";
 
 import "../css/main.css"
+import Footer from "../components/Footer";
 
 function Favourites() {
     return (
@@ -19,6 +20,8 @@ function Favourites() {
                 <ProjectPreview title="Проект 1" description="Описание проекта 1" author="ewiwiwii" color="#FFF" link="/project" />
                 <ProjectPreview title="Проект 1" description="Описание проекта 1" author="ewiwiwii" color="#FFE6BD" link="/project" />
             </div>
+
+            <Footer />
         </body>
     )
 }

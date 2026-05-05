@@ -1,0 +1,30 @@
+.project-header{
+    padding: 20px 0;
+    border-bottom: 1px solid #000;
+}
+
+.project-header__top{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.project-header__info{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 30px;
+}
+
+.project-aiDescription{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 5px;
+}
+
+.project-github{
+    max-height: 30px;
+}
+

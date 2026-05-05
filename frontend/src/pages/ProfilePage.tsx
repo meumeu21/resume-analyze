@@ -14,6 +14,7 @@ import type { ContactLink } from "../api/auth";
 
 import avatar from "../images/avatar-profile.jpg";
 import starIcon from "../images/icons/ai-star.svg";
+import Footer from "../components/Footer";
 
 function contactHandle(type: string, url: string): string {
   try {
@@ -206,6 +207,7 @@ function ProfilePage() {
           </div>
         </div>
       </div>
+      <Footer />
     </>
   );
 }

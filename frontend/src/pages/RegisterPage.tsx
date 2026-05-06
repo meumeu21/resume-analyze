@@ -75,7 +75,7 @@ function RegisterPage() {
           </button>
         </form>
 
-        <Link to="/" className="text-btn">
+        <Link to="/login" className="text-btn">
           Вы уже зарегистрированы?
         </Link>
       </div>

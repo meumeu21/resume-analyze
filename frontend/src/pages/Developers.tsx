@@ -7,7 +7,7 @@ function Developers() {
   return (
     <body>
       <Header username="ewiwiwii"/>
-      <div className="container">
+      <div className="container page">
         <h1>Разработчики</h1>
       </div>
       <Footer />

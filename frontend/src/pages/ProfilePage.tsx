@@ -99,7 +99,7 @@ function ProfilePage() {
     <>
       <Header username={nickname} />
 
-      <div className="container">
+      <div className="container page">
         <div className="profile-page">
 
           <div className="profile-header">

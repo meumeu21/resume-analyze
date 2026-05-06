@@ -19,7 +19,7 @@ function Project() {
             <Header username="ewiwiwii"/>
 
             
-            <div className="container">
+            <div className="container page">
                 <Link to={"/users/me"} className="text link">Назад</Link>
 
                 <div className="project-header">

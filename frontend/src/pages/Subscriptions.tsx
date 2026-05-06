@@ -11,7 +11,7 @@ function Subscriptions() {
         <body>
             <Header username="ewiwiwii" />
 
-            <div className="container">
+            <div className="container page">
                 <h1 className="page-h1">Подписки</h1>
 
                 <Link to={"/users/me"} className="text link">Назад</Link>

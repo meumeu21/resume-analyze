@@ -1,0 +1,35 @@
+.home__banner{
+    background-image: url(../images/home-banner.jpg);
+    min-height: 450px;
+    width: 100%;
+
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+
+    color: white;
+
+    padding: 50px 0;
+
+    display: flex;
+}
+
+.home__banner-inner{
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+}
+
+.home-banner__h1{
+    font-weight: 600;
+    font-size: 20px;
+    margin: 0;
+}
+
+.home-banner__texts{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}

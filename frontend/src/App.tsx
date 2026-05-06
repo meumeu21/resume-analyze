@@ -9,6 +9,7 @@ import Subscriptors from './pages/Subscriptors';
 import Favourites from './pages/Favourites';
 import Project from './pages/Project';
 import Developers from './pages/Developers';
+import Home from './pages/Home';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { accessToken, isLoading } = useAuth();
@@ -27,7 +28,8 @@ function GuestRoute({ children }: { children: React.ReactNode }) {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<GuestRoute><LoginPage /></GuestRoute>} />
+      <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+      <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
       <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
       <Route path="/users/:id" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />

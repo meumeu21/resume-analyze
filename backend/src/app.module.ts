@@ -30,7 +30,6 @@ import { VisualizationModule } from './visualization/visualization.module';
     ThrottlerModule.forRoot([
       { name: 'default', ttl: 60_000, limit: 100 },
       { name: 'auth', ttl: 60_000, limit: 5 },
-      { name: 'ai-generate', ttl: 3_600_000, limit: 10 },
     ]),
 
     BullModule.forRootAsync({

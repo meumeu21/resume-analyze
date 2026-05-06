@@ -16,7 +16,7 @@ export class AiController {
   constructor(private readonly aiService: AiService) {}
 
   @Post('reports')
-  @Throttle({ 'ai-generate': { ttl: 3_600_000, limit: 10 } })
+  @Throttle({ default: { ttl: 3_600_000, limit: 10 } })
   generate(@CurrentUser() user: User, @Body() dto: GenerateReportDto) {
     return this.aiService.generate(user, dto);
   }

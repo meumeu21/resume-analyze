@@ -28,3 +28,62 @@
     max-height: 30px;
 }
 
+.project-h1{
+    margin: 0;
+}
+
+.project-header__bottom{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+
+    margin-top: 15px;
+}
+
+.instruments{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+}
+
+.instruments__item{
+    border: 1px solid #000;
+    border-radius: 999px;
+    padding: 5px 15px;
+
+    width: fit-content;
+}
+
+.instruments__item p{
+    font-size: 16px;
+}
+
+.project-body{
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+
+    margin-top: 30px;
+}
+
+.project-footer{
+    border-top: 1px solid #000;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding-top: 15px;
+}
+
+.project-images{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    max-width: 100%
+}
+
+.project-image{
+    border-radius: 10px;
+    max-width: 100%;
+}

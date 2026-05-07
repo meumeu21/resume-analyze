@@ -89,3 +89,20 @@ export function unfollowUser(userId: string, accessToken: string) {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 }
+
+export function updateProfileInfo(
+  accessToken: string,
+  data: Partial<{
+    bio: string;
+    softSkills: string[];
+    hardSkills: string[];
+  }>
+) {
+  return request<void>('/api/users/me', {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(data),
+  });
+}

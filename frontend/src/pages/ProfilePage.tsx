@@ -8,7 +8,7 @@ import ProfileMetrics from "../components/ProfileMetrics";
 import Header from "../components/Header";
 import ProjectPreview from "../components/ProjectPreview";
 import { useAuth } from "../context/AuthContext";
-import { getMyProfile, getUserProfile, followUser, unfollowUser } from "../api/users";
+import { getMyProfile, getUserProfile, followUser, unfollowUser, updateProfileInfo } from "../api/users";
 import type { MyProfileResponse, UserProfileResponse } from "../api/users";
 import type { ContactLink } from "../api/auth";
 
@@ -93,6 +93,27 @@ function ProfilePage() {
       setFollowLoading(false);
     }
   }
+
+  async function handleBioSave(newBio: string) {
+  if (!accessToken) return;
+
+  try {
+    await updateProfileInfo(accessToken, {
+      bio: newBio,
+    });
+
+    setMyProfile((prev) =>
+      prev
+        ? {
+            ...prev,
+            bio: newBio,
+          }
+        : prev
+    );
+  } catch (e) {
+    console.error(e);
+  }
+}
 
 
   return (
@@ -184,17 +205,32 @@ function ProfilePage() {
             {isOwn ? (
               <>
                 {(myProfile !== null || user?.profile != null) && (
-                  <TextField title="Обо мне" text={(myProfile?.bio ?? user?.profile?.bio ?? '') || 'Расскажите о себе'} />
+                  <TextField
+                    title="Обо мне"
+                    text={(myProfile?.bio ?? user?.profile?.bio ?? '') || 'Расскажите о себе'}
+                    editable={true}
+                    onSave={handleBioSave}
+                  />
                 )}
                 <div className="profile-content__projects-container">
                   <ProjectPreview title="Проект 1" description="Описание проекта 1" author={nickname} color="#FFF" link="/project" />
                   <ProjectPreview title="Проект 1" description="Описание проекта 1" author={nickname} color="#ECEBFF" link="/project" />
                 </div>
                 {softSkillsText !== undefined && (
-                  <TextField title="Soft Skills" text={softSkillsText || 'Расскажите о своих софт-скиллах'} />
+                  <TextField
+                    title="Soft Skills"
+                    text={softSkillsText || 'Расскажите о своих софт-скиллах'}
+                    editable={true}
+                    onSave={handleBioSave}
+                  />
                 )}
                 {hardSkillsText !== undefined && (
-                  <TextField title="Hard Skills" text={hardSkillsText || 'Расскажите о своих хард-скиллах'} />
+                  <TextField
+                    title="Hard Skills"
+                    text={hardSkillsText || 'Расскажите о своих хард-скиллах'}
+                    editable={true}
+                    onSave={handleBioSave}
+                  />
                 )}
               </>
             ) : (

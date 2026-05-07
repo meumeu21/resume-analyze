@@ -1,12 +1,11 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 import "../css/Header.css"
 
-type HeaderProps = {
-    username: string
-};
+function Header() {
+    const { user, accessToken } = useAuth();
 
-function Header({ username }: HeaderProps) {
     return(
         <nav>
             <div className="header container">
@@ -16,7 +15,10 @@ function Header({ username }: HeaderProps) {
                     <Link to="/" className="header__menu-item special text">Нейросеть</Link>
                     <Link to="/developers" className="header__menu-item text">Разработчики</Link>
                 </div>
-                <Link to="/users/me" className="header__menu-item text">{username}</Link>
+                {accessToken
+                    ? <Link to="/users/me" className="header__menu-item text">{user?.profile?.nickname ?? '...'}</Link>
+                    : <Link to="/login" className="header__menu-item text">Войти</Link>
+                }
             </div>
         </nav>
     )

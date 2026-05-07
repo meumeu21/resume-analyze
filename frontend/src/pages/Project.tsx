@@ -16,7 +16,7 @@ import avatar from "../images/avatar-profile.jpg";
 function Project() {
     return (
         <body>
-            <Header username="ewiwiwii"/>
+            <Header />
 
             
             <div className="container page">

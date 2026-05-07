@@ -9,7 +9,7 @@ import Footer from "../components/Footer";
 function Subscriptors() {
     return (
         <body>
-            <Header username="ewiwiwii" />
+            <Header />
 
             <div className="container page">
                 <h1 className="page-h1">Подписчики</h1>

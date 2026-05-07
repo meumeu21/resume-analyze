@@ -6,7 +6,7 @@ import "../css/main.css"
 function Developers() {
   return (
     <body>
-      <Header username="ewiwiwii"/>
+      <Header />
       <div className="container page">
         <h1>Разработчики</h1>
       </div>

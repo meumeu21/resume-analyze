@@ -12,7 +12,7 @@ import avatar from "../images/avatar-profile.jpg";
 function Home() {
     return (
         <body>
-            <Header username="ewiwiwii"/>
+            <Header />
 
             <div className="home__banner">
                 <div className="container home__banner-inner">

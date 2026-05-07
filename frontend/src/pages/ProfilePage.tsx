@@ -97,7 +97,7 @@ function ProfilePage() {
 
   return (
     <>
-      <Header username={nickname} />
+      <Header />
 
       <div className="container page">
         <div className="profile-page">

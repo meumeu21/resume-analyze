@@ -8,7 +8,7 @@ import Footer from "../components/Footer";
 function Favourites() {
     return (
         <body>
-            <Header username="ewiwiwii" />
+            <Header />
 
             <div className="container page">
                 <h1 className="page-h1">Избранное</h1>

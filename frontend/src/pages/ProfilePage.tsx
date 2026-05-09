@@ -46,6 +46,7 @@ function ProfilePage() {
   const [otherProfile, setOtherProfile] = useState<UserProfileResponse | null>(null);
   const [following, setFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     if (!isOwn && user?.id && id === user.id) {
@@ -95,25 +96,30 @@ function ProfilePage() {
   }
 
   async function handleBioSave(newBio: string) {
-  if (!accessToken) return;
+    if (!accessToken) return;
 
-  try {
-    await updateProfileInfo(accessToken, {
-      bio: newBio,
-    });
+    try {
+      await updateProfileInfo(accessToken, {
+        bio: newBio,
+      });
 
-    setMyProfile((prev) =>
-      prev
-        ? {
-            ...prev,
-            bio: newBio,
-          }
-        : prev
-    );
-  } catch (e) {
-    console.error(e);
+      setMyProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              bio: newBio,
+            }
+          : prev
+      );
+    } catch (e) {
+      console.error(e);
+    }
   }
-}
+
+  function handleEdit() {
+    setIsEditing((prev) => !prev);
+  }
+
 
 
   return (
@@ -168,7 +174,11 @@ function ProfilePage() {
                 <div className="edit-buttons">
                   {isOwn ? (
                     <>
-                      <button className="button text fc">Редактировать</button>
+                      <button
+                        className="button text fc"
+                        onClick={handleEdit}>
+                        {isEditing ? "Сохранить" : "Редактировать"}
+                      </button>
                       <button className="button-light text fc" onClick={signOut}>Выйти</button>
                     </>
                   ) : (
@@ -208,7 +218,7 @@ function ProfilePage() {
                   <TextField
                     title="Обо мне"
                     text={(myProfile?.bio ?? user?.profile?.bio ?? '') || 'Расскажите о себе'}
-                    editable={true}
+                    editable={isEditing}
                     onSave={handleBioSave}
                   />
                 )}
@@ -220,7 +230,7 @@ function ProfilePage() {
                   <TextField
                     title="Soft Skills"
                     text={softSkillsText || 'Расскажите о своих софт-скиллах'}
-                    editable={true}
+                    editable={isEditing}
                     onSave={handleBioSave}
                   />
                 )}
@@ -228,7 +238,7 @@ function ProfilePage() {
                   <TextField
                     title="Hard Skills"
                     text={hardSkillsText || 'Расскажите о своих хард-скиллах'}
-                    editable={true}
+                    editable={isEditing}
                     onSave={handleBioSave}
                   />
                 )}

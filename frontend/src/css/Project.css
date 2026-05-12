@@ -87,3 +87,232 @@
     border-radius: 10px;
     max-width: 100%;
 }
+
+/* ── навигация ── */
+.project-nav {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.project-edit-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.project-error {
+    color: #c0392b;
+    margin-bottom: 10px;
+}
+
+/* ── секция ── */
+.project-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.project-h2 {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.project-downloads {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* ── редактирование ── */
+.project-editor {
+    margin-top: 20px;
+}
+
+/* ── табы ── */
+.project-tabs {
+    display: flex;
+    flex-direction: row;
+    border-bottom: 2px solid #000;
+    margin-bottom: 28px;
+}
+
+.project-tab {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 10px 28px;
+    margin-bottom: -2px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: border-color 0.15s;
+}
+
+.project-tab--active {
+    border-bottom-color: #000;
+    font-weight: 600;
+}
+
+/* ── форма редактирования ── */
+.project-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.project-edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.project-edit-field--row {
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+}
+
+.project-input {
+    font-family: inherit;
+    padding: 8px 12px;
+    border: 1px solid #000;
+    border-radius: 8px;
+    outline: none;
+    background: transparent;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.project-textarea {
+    font-family: inherit;
+    padding: 8px 12px;
+    border: 1px solid #000;
+    border-radius: 8px;
+    outline: none;
+    background: transparent;
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+}
+
+.project-checkbox {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #000;
+}
+
+/* ── stack chips ── */
+.stack-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 10px;
+    border: 1px solid #000;
+    border-radius: 8px;
+    min-height: 46px;
+    align-items: center;
+}
+
+.stack-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #000;
+    color: #fff;
+    border-radius: 999px;
+    padding: 4px 14px;
+}
+
+.stack-chip span {
+    font-size: 16px;
+}
+
+.stack-chip__remove {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0;
+}
+
+.stack-chip-input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 300;
+    min-width: 180px;
+    flex: 1;
+}
+
+/* ── файлы ── */
+.project-files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.project-file-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.project-file-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #c0392b;
+    font-family: inherit;
+    padding: 0;
+}
+
+.project-file-remove:hover {
+    text-decoration: underline;
+}
+
+.project-files-empty {
+    color: #888;
+}
+
+.project-upload-btn {
+    width: fit-content;
+    margin-top: 4px;
+}
+
+.project-github-hint {
+    color: #666;
+}
+
+/* ── demo link in header ── */
+.project-demo-link {
+    font-size: 16px;
+    padding: 6px 18px;
+    text-decoration: none;
+}
+
+/* ── date range fields ── */
+.project-dates-row {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+}
+
+.project-date-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}

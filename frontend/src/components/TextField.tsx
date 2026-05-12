@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import "../css/TextFiels.css";
+import "../css/TextField.css";
 
 type TextFieldProps = {
   title: string;

@@ -42,8 +42,8 @@ export class Profile {
   hardSkills: { name: string; level: number }[] = [];
 
   // {x: -5..5, y: -5..5}
-  // x: низкоуровневое ↔ высокоуровневое
-  // y: продуктовый подход ↔ инженерный подход
+  // x: низкоуровневое - высокоуровневое
+  // y: продуктовый подход - инженерный подход
   @Column({ type: 'jsonb', nullable: true })
   coordinates: { x: number; y: number } | null = null;
 

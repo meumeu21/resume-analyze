@@ -10,7 +10,7 @@ type ProfilePreviewProps = {
   linkToAvatar: string;
   linkToProfile: string;
   numOfSubs: string;
-  numOfProjects: string;
+  numOfProjects?: string;
 };
 
 function ProfilePreview({ username, AIdescription, linkToAvatar, linkToProfile, numOfSubs, numOfProjects }: ProfilePreviewProps) {
@@ -28,7 +28,9 @@ function ProfilePreview({ username, AIdescription, linkToAvatar, linkToProfile, 
                     </div>
                     <div className="profile-preview__numbers-data">
                         <p className="profile-preview__numbers text">{numOfSubs} подписчиков</p>
-                        <p className="profile-preview__numbers text">{numOfProjects} проектов</p>
+                        {numOfProjects !== undefined && (
+                          <p className="profile-preview__numbers text">{numOfProjects} проектов</p>
+                        )}
                     </div>
                 </div>
             </div>

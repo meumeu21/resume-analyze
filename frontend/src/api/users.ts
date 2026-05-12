@@ -1,5 +1,33 @@
 import type { ContactLink } from './auth';
 
+export interface ProjectSummary {
+  id: string;
+  title: string;
+  description: string | null;
+  isPublic: boolean;
+  stack: string[];
+  source: 'manual' | 'github';
+  createdAt: string;
+}
+
+export interface UserCard {
+  userId: string;
+  nickname: string;
+  avatarUrl: string | null;
+  activityField: string | null;
+  softSkills: string[];
+  hardSkills: { name: string; level: number }[];
+  followersCount: number;
+  isFollowing: boolean;
+}
+
+export interface UsersPage {
+  data: UserCard[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface MyProfileResponse {
   userId: string;
   email: string;
@@ -18,6 +46,7 @@ export interface MyProfileResponse {
   isFollowersPublic: boolean;
   isFollowingPublic: boolean;
   isFavoritesPublic: boolean;
+  projects: ProjectSummary[];
 }
 
 export interface UserProfileResponse {
@@ -35,13 +64,13 @@ export interface UserProfileResponse {
   favoritesCount: number | null;
   isFollowing: boolean;
   contacts: ContactLink[];
-  publicProjects: unknown[];
+  publicProjects: ProjectSummary[];
 }
 
 async function request<T>(url: string, options: RequestInit): Promise<T> {
   const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
+    headers: { 'Content-Type': 'application/json', ...options.headers },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -64,15 +93,41 @@ export function getUserProfile(userId: string, accessToken?: string | null) {
   });
 }
 
-export function updateMyProfile(accessToken: string, data: Partial<{
-  isFollowersPublic: boolean;
-  isFollowingPublic: boolean;
-  isFavoritesPublic: boolean;
-}>) {
+export type ContactType = 'github' | 'telegram' | 'linkedin' | 'website' | 'other';
+
+export interface ContactInput {
+  type: ContactType;
+  url: string;
+  isPublic?: boolean;
+}
+
+export function patchMyProfile(
+  accessToken: string,
+  data: Partial<{
+    nickname: string;
+    firstName: string;
+    lastName: string;
+    avatarUrl: string;
+    bio: string;
+    softSkills: string[];
+    hardSkills: { name: string; level: number }[];
+    isFollowersPublic: boolean;
+    isFollowingPublic: boolean;
+    isFavoritesPublic: boolean;
+  }>,
+) {
   return request<void>('/api/users/me', {
     method: 'PATCH',
     headers: { Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(data),
+  });
+}
+
+export function updateContacts(accessToken: string, contacts: ContactInput[]) {
+  return request<void>('/api/users/me/contacts', {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ contacts }),
   });
 }
 
@@ -87,6 +142,22 @@ export function unfollowUser(userId: string, accessToken: string) {
   return request<void>(`/api/users/${userId}/follow`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function getUsers(
+  params: { search?: string; activityField?: string; page?: number; limit?: number },
+  accessToken?: string | null,
+) {
+  const qs = new URLSearchParams();
+  if (params.search) qs.set('search', params.search);
+  if (params.activityField) qs.set('activityField', params.activityField);
+  if (params.page) qs.set('page', String(params.page));
+  if (params.limit) qs.set('limit', String(params.limit));
+
+  return request<UsersPage>(`/api/users?${qs}`, {
+    method: 'GET',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
   });
 }
 

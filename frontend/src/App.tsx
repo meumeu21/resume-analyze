@@ -19,26 +19,20 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function GuestRoute({ children }: { children: React.ReactNode }) {
-  const { accessToken, isLoading } = useAuth();
-  if (isLoading) return null;
-  if (accessToken) return <Navigate to="/users/me" replace />;
-  return <>{children}</>;
-}
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-      <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
-      <Route path="/users/:id" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/users/:id" element={<ProfilePage />} />
       <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
       <Route path="/subscriptors" element={<ProtectedRoute><Subscriptors /></ProtectedRoute>} />
       <Route path="/favourites" element={<ProtectedRoute><Favourites /></ProtectedRoute>} />
-      <Route path="/project" element={<ProtectedRoute><Project /></ProtectedRoute>} />
-      <Route path="/developers" element={<ProtectedRoute><Developers /></ProtectedRoute>} />
-      <Route path="/neuro" element={<ProtectedRoute><Neuro /></ProtectedRoute>} />
+      <Route path="/projects/:id" element={<Project />} />
+      <Route path="/developers" element={<Developers />} />
+      <Route path="/neuro" element={<Neuro />} />
     </Routes>
   );
 }

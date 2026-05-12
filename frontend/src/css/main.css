@@ -116,6 +116,13 @@ p {
     margin-bottom: 10px;
 }
 
+.project-preview__actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+}
+
 .project-preview__wrap{
     display: flex;
     flex-direction: column;
@@ -124,6 +131,12 @@ p {
 
 .project-preview__title{
     margin: 0;
+}
+
+.page-h1 {
+    font-size: 36px;
+    font-weight: 600;
+    margin: 0 0 20px 0;
 }
 
 .footer{

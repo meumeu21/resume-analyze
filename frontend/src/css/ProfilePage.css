@@ -302,3 +302,45 @@
     flex-direction: row;
     gap: 10px;
 }
+/* ── github integration ── */
+.github-integration {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    border: 1px solid #000;
+    border-radius: 12px;
+}
+
+.github-integration__title {
+    margin: 0;
+    font-size: 20px;
+}
+
+.github-integration__hint {
+    color: #666;
+    margin: 0;
+}
+
+.github-connected {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.github-connected__actions {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
+.github-connect-form__row {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+}
+
+.github-username-input {
+    max-width: 260px;
+}

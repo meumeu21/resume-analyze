@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import {
   ContactLink, Favorite, Follow, Profile, Project, User,
 } from '../database/entities';
@@ -186,6 +186,22 @@ export class UsersService {
     if (!follow) throw new NotFoundException('Подписка не найдена');
 
     await this.followRepo.remove(follow);
+  }
+
+  async getFollowers(userId: string, currentUserId: string | null) {
+    const follows = await this.followRepo.find({ where: { followingId: userId } });
+    if (!follows.length) return [];
+    const ids = follows.map((f) => f.followerId);
+    const profiles = await this.profileRepo.find({ where: { userId: In(ids) } });
+    return Promise.all(profiles.map((p) => this.toUserCard(p, currentUserId)));
+  }
+
+  async getFollowing(userId: string, currentUserId: string | null) {
+    const follows = await this.followRepo.find({ where: { followerId: userId } });
+    if (!follows.length) return [];
+    const ids = follows.map((f) => f.followingId);
+    const profiles = await this.profileRepo.find({ where: { userId: In(ids) } });
+    return Promise.all(profiles.map((p) => this.toUserCard(p, currentUserId)));
   }
 
   // хелперы

@@ -15,8 +15,12 @@ import {
   patchMyProfile, updateContacts,
 } from "../api/users";
 import type { MyProfileResponse, UserProfileResponse, ContactType } from "../api/users";
-import { createProject } from "../api/projects";
+import { createProject, getFavoriteProjects, addFavorite, removeFavorite } from "../api/projects";
 import type { ContactLink } from "../api/auth";
+import {
+  getGithubAccount, connectGithub, syncGithubRepos, disconnectGithub,
+} from "../api/github";
+import type { GithubAccountData } from "../api/github";
 
 import avatar from "../images/avatar-profile.jpg";
 import starIcon from "../images/icons/ai-star.svg";
@@ -111,6 +115,17 @@ function ProfilePage() {
   const [avatarInput, setAvatarInput] = useState('');
   const [avatarError, setAvatarError] = useState('');
 
+  // favorites for other user's projects
+  const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
+
+  // github integration
+  const [githubAccount, setGithubAccount] = useState<GithubAccountData | null>(null);
+  const [githubAccountLoading, setGithubAccountLoading] = useState(false);
+  const [githubAccountError, setGithubAccountError] = useState('');
+  const [githubUsernameInput, setGithubUsernameInput] = useState('');
+  const [githubConnecting, setGithubConnecting] = useState(false);
+  const [githubSyncing, setGithubSyncing] = useState(false);
+
   // ── redirect guests from /users/me ─────────────────────────────────────────
   useEffect(() => {
     if (isOwn && !isLoading && !accessToken) {
@@ -136,6 +151,22 @@ function ProfilePage() {
     }
   }, [id, accessToken, isOwn]);
 
+  useEffect(() => {
+    if (isOwn || !accessToken) return;
+    getFavoriteProjects(accessToken)
+      .then((favs) => setFavoritedIds(new Set(favs.map((f) => f.id))))
+      .catch(() => {});
+  }, [isOwn, accessToken]);
+
+  useEffect(() => {
+    if (!isOwn || !accessToken) return;
+    setGithubAccountLoading(true);
+    getGithubAccount(accessToken)
+      .then(setGithubAccount)
+      .catch(() => setGithubAccount(null))
+      .finally(() => setGithubAccountLoading(false));
+  }, [isOwn, accessToken]);
+
   const profile = isOwn ? myProfile : otherProfile;
   const nickname = profile?.nickname ?? (isOwn ? user?.profile?.nickname : undefined) ?? 'Пользователь';
   const avatarSrc = profile?.avatarUrl ?? (isOwn ? user?.profile?.avatarUrl : undefined) ?? avatar;
@@ -145,21 +176,36 @@ function ProfilePage() {
 
   // ── follow ─────────────────────────────────────────────────────────────────
   async function handleFollow() {
-    if (!accessToken || !id) return;
+    if (!accessToken || !id || followLoading) return;
     setFollowLoading(true);
-    try {
-      if (following) {
+
+    if (following) {
+      // Optimistic: unfollow
+      setFollowing(false);
+      setOtherProfile((p) => p ? { ...p, followersCount: (p.followersCount ?? 1) - 1 } : p);
+      setMyProfile((p) => p ? { ...p, followingCount: (p.followingCount ?? 1) - 1 } : p);
+      try {
         await unfollowUser(id, accessToken);
-        setFollowing(false);
-        setOtherProfile((p) => p ? { ...p, followersCount: (p.followersCount ?? 1) - 1 } : p);
-      } else {
-        await followUser(id, accessToken);
+      } catch {
         setFollowing(true);
         setOtherProfile((p) => p ? { ...p, followersCount: (p.followersCount ?? 0) + 1 } : p);
+        setMyProfile((p) => p ? { ...p, followingCount: (p.followingCount ?? 0) + 1 } : p);
       }
-    } catch { /* ignore */ } finally {
-      setFollowLoading(false);
+    } else {
+      // Optimistic: follow
+      setFollowing(true);
+      setOtherProfile((p) => p ? { ...p, followersCount: (p.followersCount ?? 0) + 1 } : p);
+      setMyProfile((p) => p ? { ...p, followingCount: (p.followingCount ?? 0) + 1 } : p);
+      try {
+        await followUser(id, accessToken);
+      } catch {
+        setFollowing(false);
+        setOtherProfile((p) => p ? { ...p, followersCount: (p.followersCount ?? 1) - 1 } : p);
+        setMyProfile((p) => p ? { ...p, followingCount: (p.followingCount ?? 1) - 1 } : p);
+      }
     }
+
+    setFollowLoading(false);
   }
 
   // ── edit mode ──────────────────────────────────────────────────────────────
@@ -222,6 +268,35 @@ function ProfilePage() {
     }
   }
 
+  // ── toggle favorite on other user's project ───────────────────────────────
+  async function handleToggleFavorite(e: React.MouseEvent, projectId: string) {
+    e.preventDefault();
+    if (!accessToken) return;
+    const isFav = favoritedIds.has(projectId);
+
+    if (isFav) {
+      // Optimistic: remove
+      setFavoritedIds((prev) => { const next = new Set(prev); next.delete(projectId); return next; });
+      setMyProfile((p) => p ? { ...p, favoritesCount: Math.max(0, (p.favoritesCount ?? 1) - 1) } : p);
+      try {
+        await removeFavorite(projectId, accessToken);
+      } catch {
+        setFavoritedIds((prev) => new Set(prev).add(projectId));
+        setMyProfile((p) => p ? { ...p, favoritesCount: (p.favoritesCount ?? 0) + 1 } : p);
+      }
+    } else {
+      // Optimistic: add
+      setFavoritedIds((prev) => new Set(prev).add(projectId));
+      setMyProfile((p) => p ? { ...p, favoritesCount: (p.favoritesCount ?? 0) + 1 } : p);
+      try {
+        await addFavorite(projectId, accessToken);
+      } catch {
+        setFavoritedIds((prev) => { const next = new Set(prev); next.delete(projectId); return next; });
+        setMyProfile((p) => p ? { ...p, favoritesCount: Math.max(0, (p.favoritesCount ?? 1) - 1) } : p);
+      }
+    }
+  }
+
   // ── bio / skills ───────────────────────────────────────────────────────────
   async function handleBioSave(value: string) {
     if (!accessToken) return;
@@ -277,6 +352,48 @@ function ProfilePage() {
       setShowAvatarModal(false);
     } catch (e: unknown) {
       if (e instanceof Error) setAvatarError(e.message);
+    }
+  }
+
+  // ── github integration ─────────────────────────────────────────────────────
+  async function handleGithubConnect() {
+    if (!accessToken || !githubUsernameInput.trim()) return;
+    setGithubConnecting(true);
+    setGithubAccountError('');
+    try {
+      const account = await connectGithub(accessToken, githubUsernameInput.trim());
+      setGithubAccount(account);
+      setGithubUsernameInput('');
+    } catch (e: unknown) {
+      if (e instanceof Error) setGithubAccountError(e.message);
+    } finally {
+      setGithubConnecting(false);
+    }
+  }
+
+  async function handleGithubSync() {
+    if (!accessToken) return;
+    setGithubSyncing(true);
+    setGithubAccountError('');
+    try {
+      await syncGithubRepos(accessToken);
+      const account = await getGithubAccount(accessToken);
+      setGithubAccount(account);
+    } catch (e: unknown) {
+      if (e instanceof Error) setGithubAccountError(e.message);
+    } finally {
+      setGithubSyncing(false);
+    }
+  }
+
+  async function handleGithubDisconnect() {
+    if (!accessToken) return;
+    setGithubAccountError('');
+    try {
+      await disconnectGithub(accessToken);
+      setGithubAccount(null);
+    } catch (e: unknown) {
+      if (e instanceof Error) setGithubAccountError(e.message);
     }
   }
 
@@ -453,6 +570,57 @@ function ProfilePage() {
                   editable={isEditing}
                   onSave={handleHardSkillsSave}
                 />
+
+                {/* GitHub integration */}
+                <div className="github-integration">
+                  <h2 className="github-integration__title text bold">GitHub-аккаунт</h2>
+                  <p className="text github-integration__hint">
+                    Подключите аккаунт, чтобы импортировать репозитории в проекты
+                  </p>
+                  {githubAccountLoading ? (
+                    <p className="text">Загрузка...</p>
+                  ) : githubAccount ? (
+                    <div className="github-connected">
+                      <p className="text">
+                        Подключён: <span className="bold">{githubAccount.githubUsername}</span>
+                        {' · '}{githubAccount.repos.length} репозиториев
+                      </p>
+                      {githubAccountError && <p className="error-text text">{githubAccountError}</p>}
+                      <div className="github-connected__actions">
+                        <button
+                          className="button-light text"
+                          onClick={handleGithubSync}
+                          disabled={githubSyncing}
+                        >
+                          {githubSyncing ? 'Синхронизация...' : 'Синхронизировать'}
+                        </button>
+                        <button className="button-light text" onClick={handleGithubDisconnect}>
+                          Отключить
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="github-connect-form">
+                      {githubAccountError && <p className="error-text text">{githubAccountError}</p>}
+                      <div className="github-connect-form__row">
+                        <input
+                          className="project-input text github-username-input"
+                          value={githubUsernameInput}
+                          onChange={(e) => setGithubUsernameInput(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleGithubConnect()}
+                          placeholder="GitHub username"
+                        />
+                        <button
+                          className="button text"
+                          onClick={handleGithubConnect}
+                          disabled={githubConnecting || !githubUsernameInput.trim()}
+                        >
+                          {githubConnecting ? 'Подключение...' : 'Подключить'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -467,6 +635,8 @@ function ProfilePage() {
                         author={otherProfile?.nickname ?? ''}
                         color={CARD_COLORS[i % CARD_COLORS.length]}
                         link={`/projects/${p.id}`}
+                        isFavorited={favoritedIds.has(p.id)}
+                        onToggleFavorite={accessToken ? (e) => handleToggleFavorite(e, p.id) : undefined}
                       />
                     ))}
                   </div>

@@ -48,6 +48,18 @@ export class UsersController {
     return this.usersService.syncHardSkillsFromProjects(user);
   }
 
+  @Get('me/followers')
+  @UseGuards(JwtAuthGuard)
+  getMyFollowers(@CurrentUser() user: User) {
+    return this.usersService.getFollowers(user.id, user.id);
+  }
+
+  @Get('me/following')
+  @UseGuards(JwtAuthGuard)
+  getMyFollowing(@CurrentUser() user: User) {
+    return this.usersService.getFollowing(user.id, user.id);
+  }
+
   @Get(':id')
   @UseGuards(JwtOptionalGuard)
   findOne(@Param('id') id: string, @CurrentUser() user: User | null) {

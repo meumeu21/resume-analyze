@@ -165,9 +165,11 @@ export class GithubService {
       this.fetchReadmeExcerpt(owner, repoName),
     ]);
 
+    const existing = await this.repoRepo.findOne({ where: { githubRepoId: repoData.id } });
+
     await this.repoRepo.upsert(
       {
-        githubAccountId: null,
+        githubAccountId: existing?.githubAccountId ?? null,
         githubRepoId: repoData.id,
         name: repoData.name,
         description: repoData.description,

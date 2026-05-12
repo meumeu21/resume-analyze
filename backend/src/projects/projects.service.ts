@@ -27,7 +27,7 @@ export class ProjectsService {
   async findOne(id: string, currentUserId: string | null) {
     const project = await this.projectRepo.findOne({
       where: { id },
-      relations: ['files'],
+      relations: ['files', 'githubRepo'],
     });
     if (!project) throw new NotFoundException('Проект не найден');
     if (!project.isPublic && project.userId !== currentUserId) {
@@ -133,10 +133,12 @@ export class ProjectsService {
   async getMyFavorites(userId: string) {
     const favorites = await this.favoriteRepo.find({
       where: { userId },
-      relations: ['project', 'project.files'],
+      relations: ['project'],
       order: { createdAt: 'DESC' },
     });
-    return favorites.map((f) => f.project);
+    return favorites
+      .filter((f) => f.project != null)
+      .map((f) => ({ ...f.project, isFavorited: true, favoritesCount: 0 }));
   }
 
   async fetchGithubData(projectId: string, userId: string) {

@@ -8,10 +8,17 @@ export interface ProjectFile {
   createdAt: string;
 }
 
+export interface GithubRepoMeta {
+  topics: string[];
+  starsCount: number;
+  isFork: boolean;
+}
+
 export interface ProjectResponse {
   id: string;
   userId: string;
   githubRepoId: string | null;
+  githubRepo: GithubRepoMeta | null;
   title: string;
   description: string | null;
   role: string | null;
@@ -101,6 +108,13 @@ export function deleteProjectFile(id: string, fileId: string, accessToken: strin
   });
 }
 
+export function getFavoriteProjects(accessToken: string) {
+  return request<ProjectResponse[]>('/api/projects/favorites', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
 export function addFavorite(id: string, accessToken: string) {
   return request<void>(`/api/projects/${id}/favorite`, {
     method: 'POST',
@@ -111,6 +125,20 @@ export function addFavorite(id: string, accessToken: string) {
 export function removeFavorite(id: string, accessToken: string) {
   return request<void>(`/api/projects/${id}/favorite`, {
     method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function deleteProject(id: string, accessToken: string) {
+  return request<void>(`/api/projects/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function fetchProjectGithubData(id: string, accessToken: string) {
+  return request<{ id: string }>(`/api/projects/${id}/fetch-github`, {
+    method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 }

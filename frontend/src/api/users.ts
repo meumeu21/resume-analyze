@@ -76,6 +76,7 @@ async function request<T>(url: string, options: RequestInit): Promise<T> {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { message?: string }).message ?? `HTTP ${res.status}`);
   }
+  if (res.status === 204) return undefined as T;
   return res.json();
 }
 
@@ -158,6 +159,20 @@ export function getUsers(
   return request<UsersPage>(`/api/users?${qs}`, {
     method: 'GET',
     headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+  });
+}
+
+export function getMyFollowers(accessToken: string) {
+  return request<UserCard[]>('/api/users/me/followers', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function getMyFollowing(accessToken: string) {
+  return request<UserCard[]>('/api/users/me/following', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
 }
 

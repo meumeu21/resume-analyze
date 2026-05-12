@@ -12,7 +12,7 @@ function Header() {
                 <div className="header__left">
                     <Link to="/" className="header__logo">CommIT</Link>
                     <Link to="/" className="header__menu-item text">Главная</Link>
-                    <Link to="/" className="header__menu-item special text">Нейросеть</Link>
+                    <Link to="/neuro" className="header__menu-item special text">Нейросеть</Link>
                     <Link to="/developers" className="header__menu-item text">Разработчики</Link>
                 </div>
                 {accessToken

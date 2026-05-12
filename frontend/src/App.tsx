@@ -10,6 +10,7 @@ import Favourites from './pages/Favourites';
 import Project from './pages/Project';
 import Developers from './pages/Developers';
 import Home from './pages/Home';
+import Neuro from './pages/Neuro';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { accessToken, isLoading } = useAuth();
@@ -37,6 +38,7 @@ function AppRoutes() {
       <Route path="/favourites" element={<ProtectedRoute><Favourites /></ProtectedRoute>} />
       <Route path="/project" element={<ProtectedRoute><Project /></ProtectedRoute>} />
       <Route path="/developers" element={<ProtectedRoute><Developers /></ProtectedRoute>} />
+      <Route path="/neuro" element={<ProtectedRoute><Neuro /></ProtectedRoute>} />
     </Routes>
   );
 }

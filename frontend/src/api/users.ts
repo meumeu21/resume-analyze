@@ -146,6 +146,32 @@ export function unfollowUser(userId: string, accessToken: string) {
   });
 }
 
+export async function uploadAvatar(accessToken: string, file: File): Promise<{ avatarUrl: string }> {
+  const form = new FormData();
+  form.append('avatar', file);
+  const res = await fetch('/api/users/me/avatar', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: form,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { message?: string }).message ?? `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function deleteAvatar(accessToken: string): Promise<void> {
+  const res = await fetch('/api/users/me/avatar', {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { message?: string }).message ?? `HTTP ${res.status}`);
+  }
+}
+
 export function getUsers(
   params: { search?: string; activityField?: string; page?: number; limit?: number },
   accessToken?: string | null,

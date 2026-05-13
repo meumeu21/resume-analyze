@@ -8,7 +8,6 @@ import { useAuth } from "../context/AuthContext";
 import "../css/main.css";
 
 import searchIcon from "../images/icons/search.svg";
-import avatar from "../images/avatar-profile.jpg";
 
 const ACTIVITY_FILTERS = [
   { label: 'Все', value: '' },
@@ -86,7 +85,7 @@ function Developers() {
               key={u.userId}
               username={u.nickname}
               AIdescription={u.activityField ?? ''}
-              linkToAvatar={u.avatarUrl ?? avatar}
+              avatarUrl={u.avatarUrl}
               linkToProfile={`/users/${u.userId}`}
               numOfSubs={String(u.followersCount)}
             />

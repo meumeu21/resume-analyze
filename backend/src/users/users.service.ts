@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   ContactLink, Favorite, Follow, Profile, Project, User,
 } from '../database/entities';
@@ -147,6 +149,34 @@ export class UsersService {
 
     Object.assign(profile, dto);
     return this.profileRepo.save(profile);
+  }
+
+  async updateAvatar(currentUser: User, file: Express.Multer.File): Promise<{ avatarUrl: string }> {
+    const profile = await this.profileRepo.findOne({ where: { userId: currentUser.id } });
+    if (!profile) throw new NotFoundException('Профиль не найден');
+
+    if (profile.avatarUrl?.startsWith('/uploads/')) {
+      const oldFile = path.join(process.cwd(), profile.avatarUrl);
+      try { fs.unlinkSync(oldFile); } catch { /* файл уже удалён */ }
+    }
+
+    const avatarUrl = `/uploads/${file.filename}`;
+    profile.avatarUrl = avatarUrl;
+    await this.profileRepo.save(profile);
+    return { avatarUrl };
+  }
+
+  async deleteAvatar(currentUser: User): Promise<void> {
+    const profile = await this.profileRepo.findOne({ where: { userId: currentUser.id } });
+    if (!profile) throw new NotFoundException('Профиль не найден');
+
+    if (profile.avatarUrl?.startsWith('/uploads/')) {
+      const oldFile = path.join(process.cwd(), profile.avatarUrl);
+      try { fs.unlinkSync(oldFile); } catch { /* файл уже удалён */ }
+    }
+
+    profile.avatarUrl = null;
+    await this.profileRepo.save(profile);
   }
 
   async updateContacts(currentUser: User, dto: UpdateContactsDto) {

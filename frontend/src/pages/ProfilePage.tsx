@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../css/ProfilePage.css";
 import "../css/main.css";
@@ -12,7 +12,7 @@ import ProjectPreview from "../components/ProjectPreview";
 import { useAuth } from "../context/AuthContext";
 import {
   getMyProfile, getUserProfile, followUser, unfollowUser,
-  patchMyProfile, updateContacts,
+  patchMyProfile, updateContacts, uploadAvatar, deleteAvatar,
 } from "../api/users";
 import type { MyProfileResponse, UserProfileResponse, ContactType } from "../api/users";
 import { createProject, getFavoriteProjects, addFavorite, removeFavorite } from "../api/projects";
@@ -23,7 +23,7 @@ import {
 import type { GithubAccountData } from "../api/github";
 import { generateReport, getReport } from "../api/ai";
 
-import avatar from "../images/avatar-profile.jpg";
+import Avatar from "../components/Avatar";
 import starIcon from "../images/icons/ai-star.svg";
 import Footer from "../components/Footer";
 
@@ -111,10 +111,9 @@ function ProfilePage() {
   });
   const [contactsErrors, setContactsErrors] = useState<ContactsErrors>({});
 
-  // avatar modal
-  const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [avatarInput, setAvatarInput] = useState('');
-  const [avatarError, setAvatarError] = useState('');
+  // avatar upload
+  const avatarFileRef = useRef<HTMLInputElement>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   // favorites for other user's projects
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
@@ -173,7 +172,7 @@ function ProfilePage() {
 
   const profile = isOwn ? myProfile : otherProfile;
   const nickname = profile?.nickname ?? (isOwn ? user?.profile?.nickname : undefined) ?? 'Пользователь';
-  const avatarSrc = profile?.avatarUrl ?? (isOwn ? user?.profile?.avatarUrl : undefined) ?? avatar;
+  const avatarUrl = profile?.avatarUrl ?? (isOwn ? user?.profile?.avatarUrl : undefined) ?? null;
   const contacts: ContactLink[] = (profile?.contacts ?? []) as ContactLink[];
   const softSkillsText = profile?.softSkills?.length ? profile.softSkills.join(', ') : '';
 
@@ -355,28 +354,28 @@ function ProfilePage() {
     }
   }
 
-  // ── avatar modal ───────────────────────────────────────────────────────────
-  function openAvatarModal() {
-    setAvatarInput(myProfile?.avatarUrl ?? '');
-    setAvatarError('');
-    setShowAvatarModal(true);
+  // ── avatar upload ─────────────────────────────────────────────────────────
+  async function handleAvatarFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !accessToken) return;
+    setAvatarUploading(true);
+    try {
+      const { avatarUrl: newUrl } = await uploadAvatar(accessToken, file);
+      setMyProfile((prev) => prev ? { ...prev, avatarUrl: newUrl } : prev);
+    } catch { /* ignore */ } finally {
+      setAvatarUploading(false);
+      e.target.value = '';
+    }
   }
 
-  async function handleAvatarSave() {
+  async function handleAvatarDelete() {
     if (!accessToken) return;
-    const url = avatarInput.trim();
-    if (url) {
-      try { new URL(url); } catch {
-        setAvatarError('Некорректная ссылка');
-        return;
-      }
-    }
+    setAvatarUploading(true);
     try {
-      await patchMyProfile(accessToken, { avatarUrl: url });
-      setMyProfile((prev) => prev ? { ...prev, avatarUrl: url || null } : prev);
-      setShowAvatarModal(false);
-    } catch (e: unknown) {
-      if (e instanceof Error) setAvatarError(e.message);
+      await deleteAvatar(accessToken);
+      setMyProfile((prev) => prev ? { ...prev, avatarUrl: null } : prev);
+    } catch { /* ignore */ } finally {
+      setAvatarUploading(false);
     }
   }
 
@@ -438,11 +437,22 @@ function ProfilePage() {
             {/* аватарка */}
             <div
               className={`profile-avatar${isOwn && isEditing ? ' profile-avatar--editable' : ''}`}
-              onClick={isOwn && isEditing ? openAvatarModal : undefined}
+              onClick={isOwn && isEditing ? () => avatarFileRef.current?.click() : undefined}
             >
-              <img src={avatarSrc} alt="Avatar" className="avatar-image" />
-              {isOwn && isEditing && <div className="avatar-edit-hint">Изменить</div>}
+              <Avatar avatarUrl={avatarUrl} className="avatar-image" />
+              {isOwn && isEditing && (
+                <div className="avatar-edit-hint">
+                  {avatarUploading ? '...' : 'Изменить'}
+                </div>
+              )}
             </div>
+            <input
+              ref={avatarFileRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleAvatarFileChange}
+            />
 
             <div className="profile-header-info">
               <div className="profile-header__top">
@@ -682,29 +692,6 @@ function ProfilePage() {
           </div>
         </div>
       </div>
-
-      {/* попап аватара */}
-      {showAvatarModal && (
-        <div className="modal-overlay" onClick={() => setShowAvatarModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">Изменить аватар</h3>
-            <p className="text modal-hint">Вставьте ссылку на изображение</p>
-            <input
-              type="url"
-              className="modal-input text"
-              value={avatarInput}
-              onChange={(e) => { setAvatarInput(e.target.value); setAvatarError(''); }}
-              placeholder="https://..."
-              onKeyDown={(e) => e.key === 'Enter' && handleAvatarSave()}
-            />
-            {avatarError && <p className="error-text text">{avatarError}</p>}
-            <div className="modal-buttons">
-              <button className="button text" onClick={handleAvatarSave}>Сохранить</button>
-              <button className="button-light text" onClick={() => setShowAvatarModal(false)}>Отмена</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <Footer />
     </>

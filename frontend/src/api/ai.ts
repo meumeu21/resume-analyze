@@ -1,3 +1,20 @@
+export interface ImprovementRecommendation {
+  title: string;
+  description: string;
+}
+
+export interface ProjectIdea {
+  title: string;
+  description: string;
+  stack: string[];
+  benefit: string;
+}
+
+export interface ImprovementsData {
+  recommendations: ImprovementRecommendation[];
+  project_ideas: ProjectIdea[];
+}
+
 export interface AiReport {
   id: string;
   userId: string;
@@ -5,6 +22,7 @@ export interface AiReport {
   reportType: 'activity_field' | 'improvements' | 'project_summary' | 'resume';
   status: 'pending' | 'done' | 'error';
   summary: string | null;
+  rawResponse: Record<string, unknown> | null;
   isPublic: boolean;
   errorMessage: string | null;
   createdAt: string;

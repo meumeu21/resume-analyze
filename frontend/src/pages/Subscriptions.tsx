@@ -6,7 +6,6 @@ import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
 import { getMyFollowing } from "../api/users";
 import type { UserCard } from "../api/users";
-import avatar from "../images/avatar-profile.jpg";
 
 function Subscriptions() {
     const { accessToken, isLoading } = useAuth();
@@ -45,7 +44,7 @@ function Subscriptions() {
                             key={u.userId}
                             username={u.nickname}
                             AIdescription={u.activityField ?? ''}
-                            linkToAvatar={u.avatarUrl ?? avatar}
+                            avatarUrl={u.avatarUrl}
                             linkToProfile={`/users/${u.userId}`}
                             numOfSubs={String(u.followersCount)}
                         />

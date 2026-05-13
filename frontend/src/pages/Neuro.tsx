@@ -9,7 +9,7 @@ import {
   getReport,
   downloadResumeDocx,
 } from '../api/ai';
-import type { AiReport } from '../api/ai';
+import type { AiReport, ImprovementsData } from '../api/ai';
 
 import '../css/Neuro.css';
 import '../css/main.css';
@@ -135,12 +135,6 @@ function Neuro() {
       ? `Ошибка: ${resumeReport.errorMessage}`
       : (resumeReport?.summary ?? ''));
 
-  const recText = isGeneratingRec
-    ? 'Нейросеть анализирует ваши данные...'
-    : (recommendReport?.status === 'error'
-      ? `Ошибка: ${recommendReport.errorMessage}`
-      : (recommendReport?.summary ?? ''));
-
   const canDownload = !!resumeReport && resumeReport.status === 'done';
   const resumeReady = !!resumeReport;
 
@@ -176,15 +170,77 @@ function Neuro() {
           <div>
             <h2>Рекомендации от нейросети</h2>
             {downloadError && <p className="neuro-error text">{downloadError}</p>}
-            <button
-              className="button text"
-              type="button"
-              onClick={handleGenerateRecommendations}
-              disabled={isGeneratingRec || !user}
-            >
-              {isGeneratingRec ? 'Генерирую...' : 'Получить рекомендации'}
-            </button>
-            <TextField title="Ответ CommIt.Neuro" text={recText} />
+            <div className="neuro-rec-actions">
+              <button
+                className="button text"
+                type="button"
+                onClick={handleGenerateRecommendations}
+                disabled={isGeneratingRec || !user}
+              >
+                {isGeneratingRec
+                  ? 'Анализирую...'
+                  : recommendReport
+                  ? 'Обновить рекомендации'
+                  : 'Получить рекомендации'}
+              </button>
+            </div>
+
+            {isGeneratingRec && (
+              <p className="text neuro-rec-loading">Нейросеть анализирует ваши данные...</p>
+            )}
+
+            {!isGeneratingRec && recommendReport?.status === 'error' && (
+              <p className="text neuro-error">Ошибка: {recommendReport.errorMessage}</p>
+            )}
+
+            {!isGeneratingRec && recommendReport?.status === 'done' && (() => {
+              const data = recommendReport.rawResponse as unknown as ImprovementsData | null;
+              if (!data) return <TextField title="Рекомендации" text={recommendReport.summary ?? ''} />;
+              return (
+                <div className="neuro-rec-sections">
+                  {data.recommendations?.length > 0 && (
+                    <section className="neuro-rec-section">
+                      <h3 className="neuro-rec-section-title text">Что стоит улучшить</h3>
+                      <div className="neuro-rec-list">
+                        {data.recommendations.map((rec, i) => (
+                          <div key={i} className="neuro-rec-card">
+                            <p className="neuro-rec-card-title text">{rec.title}</p>
+                            <p className="neuro-rec-card-desc text">{rec.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {data.project_ideas?.length > 0 && (
+                    <section className="neuro-rec-section">
+                      <h3 className="neuro-rec-section-title text">Идеи для проектов</h3>
+                      <div className="neuro-ideas-list">
+                        {data.project_ideas.map((idea, i) => (
+                          <div key={i} className="neuro-idea-card">
+                            <p className="neuro-idea-title text">{idea.title}</p>
+                            <p className="neuro-idea-desc text">{idea.description}</p>
+                            {idea.stack?.length > 0 && (
+                              <div className="neuro-idea-stack">
+                                {idea.stack.map((tech) => (
+                                  <span key={tech} className="neuro-idea-tag text">{tech}</span>
+                                ))}
+                              </div>
+                            )}
+                            {idea.benefit && (
+                              <p className="neuro-idea-benefit text">
+                                <span className="neuro-idea-benefit-label">Что это даст:</span>{' '}
+                                {idea.benefit}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 

@@ -3,21 +3,22 @@ import { Link } from "react-router-dom";
 import "../css/ProfilePreview.css";
 
 import starIcon from "../images/icons/ai-star.svg";
+import Avatar from "./Avatar";
 
 type ProfilePreviewProps = {
   username: string;
   AIdescription: string;
-  linkToAvatar: string;
+  avatarUrl: string | null;
   linkToProfile: string;
   numOfSubs: string;
   numOfProjects?: string;
 };
 
-function ProfilePreview({ username, AIdescription, linkToAvatar, linkToProfile, numOfSubs, numOfProjects }: ProfilePreviewProps) {
+function ProfilePreview({ username, AIdescription, avatarUrl, linkToProfile, numOfSubs, numOfProjects }: ProfilePreviewProps) {
     return (
         <div className="profile-preview">
             <div className="profile-preview__data">
-                <img src={linkToAvatar} className="profile-preview__avatar"></img>
+                <Avatar avatarUrl={avatarUrl} className="profile-preview__avatar" />
                 <div className="profile-preview__info">
                     <div className="profile-preview__name-data">
                         <h3 className="profile-preview__name"><Link to={linkToProfile} className="link">{username}</Link></h3>

@@ -51,6 +51,23 @@ interface ResumeData {
   projects: string;
 }
 
+interface ImprovementRecommendation {
+  title: string;
+  description: string;
+}
+
+interface ProjectIdea {
+  title: string;
+  description: string;
+  stack: string[];
+  benefit: string;
+}
+
+interface ImprovementsData {
+  recommendations: ImprovementRecommendation[];
+  project_ideas: ProjectIdea[];
+}
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -118,6 +135,11 @@ export class AiService {
       return;
     }
 
+    if (report.reportType === ReportType.IMPROVEMENTS) {
+      await this.processImprovementsReport(report, profile);
+      return;
+    }
+
     let project: Project | null = null;
     let githubRepo: GithubRepo | null = null;
     let allProjects: Project[] = [];
@@ -180,11 +202,7 @@ export class AiService {
       });
 
       const rawText = completion.choices[0]?.message?.content ?? '';
-
-      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('AI вернул некорректный JSON');
-
-      const resumeData: ResumeData = JSON.parse(jsonMatch[0]);
+      const resumeData: ResumeData = JSON.parse(this.extractJson(rawText));
 
       report.status = ReportStatus.DONE;
       report.rawResponse = resumeData as unknown as Record<string, unknown>;
@@ -197,6 +215,36 @@ export class AiService {
 
     await this.reportRepo.save(report);
     this.logger.log(`Resume report ${report.id} finished with status ${report.status}`);
+  }
+
+  private async processImprovementsReport(report: AiReport, profile: Profile): Promise<void> {
+    const allProjects = await this.projectRepo.find({ where: { userId: report.userId } });
+
+    try {
+      const prompt = this.buildImprovementsPrompt(profile, allProjects);
+      const completion = await this.client.chat.completions.create({
+        model: 'gemini-2.5-flash',
+        max_tokens: 4096,
+        messages: [
+          { role: 'system', content: this.systemPrompt() },
+          { role: 'user', content: prompt },
+        ],
+      });
+
+      const rawText = completion.choices[0]?.message?.content ?? '';
+      const data: ImprovementsData = JSON.parse(this.extractJson(rawText));
+
+      report.status = ReportStatus.DONE;
+      report.rawResponse = data as unknown as Record<string, unknown>;
+      report.summary = this.formatImprovementsSummary(data);
+    } catch (err) {
+      report.status = ReportStatus.ERROR;
+      report.errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
+      this.logger.error(`Improvements report ${report.id} failed: ${report.errorMessage}`);
+    }
+
+    await this.reportRepo.save(report);
+    this.logger.log(`Improvements report ${report.id} finished with status ${report.status}`);
   }
 
   async generateResumeDocx(reportId: string, userId: string): Promise<Buffer> {
@@ -469,5 +517,93 @@ ${categoriesList}
     }
 
     return profileBase;
+  }
+
+  private extractJson(text: string): string {
+    const stripped = text.replace(/```(?:json)?/g, '').replace(/```/g, '');
+    const start = stripped.indexOf('{');
+    const end = stripped.lastIndexOf('}');
+    if (start === -1 || end === -1 || end <= start) throw new Error('AI вернул некорректный JSON');
+    return stripped.slice(start, end + 1);
+  }
+
+  private buildImprovementsPrompt(profile: Profile, allProjects: Project[]): string {
+    const skillNames = profile.hardSkills.map((s) => `${s.name} (уровень ${s.level}/5)`);
+    const projectsStack = [...new Set(allProjects.flatMap((p) => p.stack))];
+
+    const projectsInfo = allProjects.length
+      ? allProjects.map((p) => [
+          `— ${p.title}`,
+          p.description ? `  Описание: ${p.description}` : null,
+          p.stack.length ? `  Стек: ${p.stack.join(', ')}` : null,
+          p.role ? `  Роль: ${p.role}` : null,
+        ].filter(Boolean).join('\n')).join('\n\n')
+      : 'Проекты не указаны';
+
+    return `Ты анализируешь профиль разработчика и даёшь персонализированные рекомендации.
+
+=== ПРОФИЛЬ ===
+Класс разработчика: ${profile.activityField || 'не определён'}
+Навыки: ${skillNames.length ? skillNames.join(', ') : 'не указаны'}
+Soft skills: ${profile.softSkills.length ? profile.softSkills.join(', ') : 'не указаны'}
+О себе: ${profile.bio || 'не заполнено'}
+
+=== ПРОЕКТЫ (анализируй в первую очередь) ===
+${projectsInfo}
+
+Весь технологический стек из проектов: ${projectsStack.length ? projectsStack.join(', ') : 'не указан'}
+
+=== ЗАДАЧА ===
+На основе этих данных дай разработчику конкретные, персонализированные рекомендации.
+Используй реальные данные — не пиши общих фраз.
+
+Верни ТОЛЬКО JSON (без markdown, без пояснений):
+{
+  "recommendations": [
+    {
+      "title": "Краткое название аспекта (3-6 слов)",
+      "description": "1-3 предложения: что конкретно улучшить и почему это важно для этого разработчика"
+    }
+  ],
+  "project_ideas": [
+    {
+      "title": "Название проекта",
+      "description": "2-3 предложения: что это за проект и какую задачу решает",
+      "stack": ["Технология1", "Технология2"],
+      "benefit": "1 предложение: что конкретно даст реализация этого проекта данному разработчику"
+    }
+  ]
+}
+
+Требования:
+- recommendations: от 3 до 5 пунктов, конкретных и применимых
+- project_ideas: от 1 до 3 идей
+- stack в project_ideas: массив строк (названия технологий)
+- Всё на русском языке`;
+  }
+
+  private formatImprovementsSummary(data: ImprovementsData): string {
+    const lines: string[] = [];
+
+    if (data.recommendations?.length) {
+      lines.push('Рекомендации по развитию:');
+      for (const r of data.recommendations) {
+        lines.push(`\n${r.title}`);
+        lines.push(r.description);
+      }
+      lines.push('');
+    }
+
+    if (data.project_ideas?.length) {
+      lines.push('Идеи для проектов:');
+      for (const p of data.project_ideas) {
+        lines.push(`\n${p.title}`);
+        lines.push(p.description);
+        if (p.stack?.length) lines.push(`Стек: ${p.stack.join(', ')}`);
+        if (p.benefit) lines.push(`Польза: ${p.benefit}`);
+      }
+    }
+
+    return lines.join('\n');
   }
 }

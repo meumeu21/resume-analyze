@@ -27,6 +27,11 @@ export class AiController {
     return this.aiService.getMyReports(user.id, pagination);
   }
 
+  @Get('reports/project/:projectId/summary')
+  getProjectSummary(@Param('projectId') projectId: string, @CurrentUser() user: User) {
+    return this.aiService.getProjectSummaryReport(user.id, projectId);
+  }
+
   @Get('reports/:id')
   getReport(@Param('id') id: string, @CurrentUser() user: User) {
     return this.aiService.getReport(id, user.id);

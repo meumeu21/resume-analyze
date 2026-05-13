@@ -21,6 +21,7 @@ import {
   getGithubAccount, connectGithub, syncGithubRepos, disconnectGithub,
 } from "../api/github";
 import type { GithubAccountData } from "../api/github";
+import { generateReport, getReport } from "../api/ai";
 
 import avatar from "../images/avatar-profile.jpg";
 import starIcon from "../images/icons/ai-star.svg";
@@ -117,6 +118,9 @@ function ProfilePage() {
 
   // favorites for other user's projects
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
+
+  // ai classification
+  const [classifying, setClassifying] = useState(false);
 
   // github integration
   const [githubAccount, setGithubAccount] = useState<GithubAccountData | null>(null);
@@ -297,6 +301,27 @@ function ProfilePage() {
     }
   }
 
+  // ── ai classification ─────────────────────────────────────────────────────
+  async function handleClassify() {
+    if (!accessToken) return;
+    setClassifying(true);
+    try {
+      const report = await generateReport(accessToken, 'activity_field');
+      let reportId = report.id;
+      let status = report.status;
+      while (status === 'pending') {
+        await new Promise((r) => setTimeout(r, 3000));
+        const updated = await getReport(accessToken, reportId);
+        status = updated.status;
+        reportId = updated.id;
+      }
+      const fresh = await getMyProfile(accessToken);
+      setMyProfile(fresh);
+    } catch { /* ignore */ } finally {
+      setClassifying(false);
+    }
+  }
+
   // ── bio / skills ───────────────────────────────────────────────────────────
   async function handleBioSave(value: string) {
     if (!accessToken) return;
@@ -440,6 +465,15 @@ function ProfilePage() {
                     <img src={starIcon} alt="Star Icon" className="star-icon" />
                     <p className="profile-class__text">{profile.activityField}</p>
                   </div>
+                )}
+                {isOwn && isEditing && (
+                  <button
+                    className="button-light text"
+                    onClick={handleClassify}
+                    disabled={classifying}
+                  >
+                    {classifying ? 'Анализ...' : profile?.activityField ? 'Переопределить' : 'Определить класс'}
+                  </button>
                 )}
               </div>
 

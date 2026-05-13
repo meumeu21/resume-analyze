@@ -19,6 +19,14 @@ const cacheKey = {
   repo: (owner: string, name: string) => `github:repo:${owner}/${name}`,
 };
 
+export interface GithubContentItem {
+  name: string;
+  path: string;
+  type: 'file' | 'dir' | 'submodule' | 'symlink';
+  size: number;
+  download_url: string | null;
+}
+
 interface GithubRepoResponse {
   id: number;
   name: string;
@@ -138,6 +146,26 @@ export class GithubService {
 
     await this.redis.set(cacheKey.account(userId), account, ACCOUNT_TTL);
     return account;
+  }
+
+  async getRepoContents(repoId: string, filePath: string): Promise<GithubContentItem[]> {
+    const repo = await this.repoRepo.findOne({ where: { id: repoId } });
+    if (!repo) throw new NotFoundException('Репозиторий не найден');
+
+    const match = repo.url.match(/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/|$)/);
+    if (!match) throw new BadRequestException('Некорректный URL репозитория');
+    const [, owner, name] = match;
+
+    const key = `github:contents:${owner}/${name}:${filePath || '__root__'}`;
+    const cached = await this.redis.get<GithubContentItem[]>(key);
+    if (cached) return cached;
+
+    const apiPath = `/repos/${owner}/${name}/contents${filePath ? `/${filePath}` : ''}`;
+    const result = await this.githubFetch<GithubContentItem | GithubContentItem[]>(apiPath);
+    const items = Array.isArray(result) ? result : [result];
+
+    await this.redis.set(key, items, 300);
+    return items;
   }
 
   async disconnect(userId: string) {

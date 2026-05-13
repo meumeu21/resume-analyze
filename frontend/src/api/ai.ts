@@ -57,6 +57,26 @@ export function getReport(accessToken: string, id: string) {
   });
 }
 
+export function getProjectSummaryReport(accessToken: string, projectId: string) {
+  return request<AiReport | null>(`/api/ai/reports/project/${projectId}/summary`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function getPublicProjectSummary(projectId: string) {
+  return request<AiReport | null>(`/api/ai/public/projects/${projectId}/summary`, {
+    method: 'GET',
+  });
+}
+
+export function toggleReportVisibility(accessToken: string, reportId: string) {
+  return request<AiReport>(`/api/ai/reports/${reportId}/visibility`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
 export async function downloadResumeDocx(accessToken: string, reportId: string): Promise<void> {
   const res = await fetch(`/api/ai/reports/${reportId}/download`, {
     headers: { Authorization: `Bearer ${accessToken}` },

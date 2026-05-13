@@ -15,9 +15,15 @@ import type { ProjectResponse } from "../api/projects";
 import { getUserProfile } from "../api/users";
 import { getGithubAccount } from "../api/github";
 import type { GithubRepoData } from "../api/github";
+import {
+  generateReport, getReport, getProjectSummaryReport,
+  getPublicProjectSummary, toggleReportVisibility,
+} from "../api/ai";
+import type { AiReport } from "../api/ai";
 
 import github from "../images/icons/github.svg";
 import aiStar from "../images/icons/ai-star.svg";
+import GithubFileBrowser from "../components/GithubFileBrowser";
 import likeEmpty from "../images/icons/heart-empty.svg";
 import likeFill from "../images/icons/heart-fill.svg";
 
@@ -64,6 +70,11 @@ function Project() {
 
   const [authorNickname, setAuthorNickname] = useState('');
 
+  // ai summary
+  const [aiSummary, setAiSummary] = useState<AiReport | null>(null);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState('');
+
   // favorite
   const [isFavorited, setIsFavorited] = useState(false);
   const [favCount, setFavCount] = useState(0);
@@ -93,6 +104,49 @@ function Project() {
       .then((p) => setAuthorNickname(p.nickname))
       .catch(() => {});
   }, [project?.userId, user?.id]);
+
+  useEffect(() => {
+    if (!id || !project) return;
+    if (isOwn && accessToken) {
+      getProjectSummaryReport(accessToken, id).then(setAiSummary).catch(() => {});
+    } else {
+      getPublicProjectSummary(id).then(setAiSummary).catch(() => {});
+    }
+  }, [id, project?.userId, isOwn, accessToken]);
+
+  useEffect(() => {
+    if (!aiSummary || aiSummary.status !== 'pending' || !accessToken) return;
+    const interval = setInterval(async () => {
+      try {
+        const updated = await getReport(accessToken, aiSummary.id);
+        setAiSummary(updated);
+        if (updated.status !== 'pending') clearInterval(interval);
+      } catch { /* ignore */ }
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [aiSummary?.id, aiSummary?.status, accessToken]);
+
+  async function handleGenerateAiSummary() {
+    if (!id || !accessToken) return;
+    setAiGenerating(true);
+    setAiError('');
+    try {
+      const report = await generateReport(accessToken, 'project_summary', id);
+      setAiSummary(report);
+    } catch (e) {
+      setAiError(e instanceof Error ? e.message : 'Ошибка генерации');
+    } finally {
+      setAiGenerating(false);
+    }
+  }
+
+  async function handleToggleAiVisibility() {
+    if (!aiSummary || !accessToken) return;
+    try {
+      const updated = await toggleReportVisibility(accessToken, aiSummary.id);
+      setAiSummary(updated);
+    } catch { /* ignore */ }
+  }
 
   function fetchGithubRepos() {
     if (!accessToken) return;
@@ -490,7 +544,7 @@ function Project() {
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,application/pdf"
+                    accept="image/*,application/pdf,text/plain,text/markdown,application/json,application/zip,.ts,.tsx,.js,.jsx,.py,.go,.rs,.java,.cpp,.c,.cs,.md"
                     style={{ display: 'none' }}
                     onChange={handleFileUpload}
                   />
@@ -649,6 +703,42 @@ function Project() {
               </div>
             )}
 
+            {/* AI-описание в режиме редактирования */}
+            <div className="project-ai-card">
+              <div className="project-ai-card-title">
+                <img src={aiStar} alt="AI" className="project-ai-icon" />
+                <span className="text bold">Описание от ИИ</span>
+                {aiSummary?.status === 'done' && (
+                  <label className="project-ai-visibility">
+                    <span className="text">{aiSummary.isPublic ? 'публичное' : 'приватное'}</span>
+                    <input
+                      type="checkbox"
+                      className="project-checkbox"
+                      checked={aiSummary.isPublic}
+                      onChange={handleToggleAiVisibility}
+                    />
+                  </label>
+                )}
+              </div>
+              {aiSummary?.status === 'pending' && (
+                <p className="text project-ai-status">Генерация описания...</p>
+              )}
+              {aiSummary?.status === 'error' && (
+                <p className="text project-ai-error">{aiSummary.errorMessage || 'Ошибка генерации'}</p>
+              )}
+              {aiSummary?.status === 'done' && aiSummary.summary && (
+                <p className="text project-ai-text">{aiSummary.summary}</p>
+              )}
+              {aiError && <p className="text project-ai-error">{aiError}</p>}
+              <button
+                className="button-light text"
+                onClick={handleGenerateAiSummary}
+                disabled={aiGenerating || aiSummary?.status === 'pending'}
+              >
+                {aiGenerating ? 'Запрос...' : aiSummary ? 'Перегенерировать' : 'Сгенерировать описание'}
+              </button>
+            </div>
+
           </div>
         ) : (
           <>
@@ -724,21 +814,45 @@ function Project() {
                 </div>
               )}
 
-              {otherFiles.length > 0 && (
-                <div className="project-downloads">
-                  {otherFiles.map((f) => (
-                    <a key={f.id} href={f.fileUrl} download={f.originalName} className="button text">
-                      {f.originalName}
-                    </a>
-                  ))}
+              {aiSummary?.status === 'done' && aiSummary.summary && (isOwn || aiSummary.isPublic) && (
+                <div className="project-section">
+                  <div className="project-ai-view-title">
+                    <img src={aiStar} alt="AI" className="project-ai-icon" />
+                    <h2 className="project-h2">Описание от ИИ</h2>
+                    {isOwn && !aiSummary.isPublic && (
+                      <span className="project-ai-badge">приватно</span>
+                    )}
+                  </div>
+                  <p className="text project-ai-text">{aiSummary.summary}</p>
                 </div>
               )}
 
-              {images.length > 0 && (
-                <div className="project-images">
-                  {images.map((f) => (
-                    <img key={f.id} src={f.fileUrl} alt={f.originalName} className="project-image" />
-                  ))}
+              {project.githubRepoId && (
+                <div className="project-section">
+                  <h2 className="project-h2">Файлы репозитория</h2>
+                  <GithubFileBrowser repoId={project.githubRepoId} />
+                </div>
+              )}
+
+              {(images.length > 0 || otherFiles.length > 0) && (
+                <div className="project-section">
+                  <h2 className="project-h2">Прикреплённые файлы</h2>
+                  {images.length > 0 && (
+                    <div className="project-images">
+                      {images.map((f) => (
+                        <img key={f.id} src={f.fileUrl} alt={f.originalName} className="project-image" />
+                      ))}
+                    </div>
+                  )}
+                  {otherFiles.length > 0 && (
+                    <div className="project-downloads">
+                      {otherFiles.map((f) => (
+                        <a key={f.id} href={f.fileUrl} download={f.originalName} className="button text">
+                          {f.originalName}
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 

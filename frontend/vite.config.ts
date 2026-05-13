@@ -9,6 +9,10 @@ export default defineConfig({
         target: process.env.API_TARGET ?? 'http://localhost:3000',
         changeOrigin: true,
       },
+      '/uploads': {
+        target: process.env.API_TARGET ?? 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
   },
 })

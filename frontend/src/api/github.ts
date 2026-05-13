@@ -48,6 +48,19 @@ export function syncGithubRepos(accessToken: string) {
   });
 }
 
+export interface GithubContentItem {
+  name: string;
+  path: string;
+  type: 'file' | 'dir' | 'submodule' | 'symlink';
+  size: number;
+  download_url: string | null;
+}
+
+export function getRepoContents(repoId: string, path = '') {
+  const query = path ? `?path=${encodeURIComponent(path)}` : '';
+  return githubRequest<GithubContentItem[]>(`/api/github/public/repos/${repoId}/contents${query}`, {});
+}
+
 export function disconnectGithub(accessToken: string) {
   return githubRequest<void>('/api/github/disconnect', {
     method: 'DELETE',

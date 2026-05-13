@@ -24,6 +24,23 @@ import { GenerateReportDto } from './dto/generate-report.dto';
 
 export const AI_REPORTS_QUEUE = 'ai-reports';
 
+export const DEVELOPER_CATEGORIES = [
+  'Frontend-разработчик',
+  'Backend-разработчик',
+  'Full-Stack разработчик',
+  'Мобильный разработчик',
+  'Data Scientist',
+  'ML-инженер',
+  'DevOps-инженер',
+  'QA-инженер',
+  'Разработчик игр',
+  'Blockchain-разработчик',
+  'Embedded-разработчик',
+  'Security-инженер',
+  'Cloud-инженер',
+  'Архитектор / Tech Lead',
+] as const;
+
 interface ResumeData {
   first_name: string;
   last_name: string;
@@ -221,6 +238,20 @@ export class AiService {
     return doc.getZip().generate({ type: 'nodebuffer' }) as Buffer;
   }
 
+  async getProjectSummaryReport(userId: string, projectId: string): Promise<AiReport | null> {
+    return this.reportRepo.findOne({
+      where: { userId, projectId, reportType: ReportType.PROJECT_SUMMARY },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async getPublicProjectSummaryReport(projectId: string): Promise<AiReport | null> {
+    return this.reportRepo.findOne({
+      where: { projectId, reportType: ReportType.PROJECT_SUMMARY, isPublic: true, status: ReportStatus.DONE },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async getMyReports(userId: string, pagination: PaginationDto): Promise<PagedResult<AiReport>> {
     const page = pagination.page ?? 1;
     const limit = pagination.limit ?? 20;
@@ -368,17 +399,32 @@ ${projectsText}
     ].filter(Boolean).join('\n');
 
     if (type === ReportType.ACTIVITY_FIELD) {
-      const projectsInfo = allProjects.map((p) => [
-        `— ${p.title}`,
-        p.description ? `  Описание: ${p.description}` : null,
-        p.stack.length ? `  Стек: ${p.stack.join(', ')}` : null,
-        p.role ? `  Роль: ${p.role}` : null,
-      ].filter(Boolean).join('\n')).join('\n\n');
+      const projectsInfo = allProjects.length
+        ? allProjects.map((p) => [
+            `— ${p.title}`,
+            p.description ? `  Описание: ${p.description}` : null,
+            p.stack.length ? `  Стек: ${p.stack.join(', ')}` : null,
+            p.role ? `  Роль: ${p.role}` : null,
+          ].filter(Boolean).join('\n')).join('\n\n')
+        : 'Проекты не указаны';
 
-      return `Данные разработчика: ${profileBase}
-              Проекты: ${projectsInfo || 'Проекты не указаны'}
-              Определи сферу деятельности этого разработчика (например: "Backend-разработчик", "Fullstack-разработчик", "Frontend-разработчик", "ML-инженер" и т.д.).
-              Ответ: одна короткая фраза — название сферы деятельности. Без пояснений.`;
+      const categoriesList = DEVELOPER_CATEGORIES.map((c, i) => `${i + 1}. ${c}`).join('\n');
+
+      return `Определи категорию разработчика на основе его данных.
+
+ВАЖНО: проекты — главный критерий, они отражают реальную специализацию лучше любых слов.
+
+=== ПРОЕКТЫ (анализируй в первую очередь) ===
+${projectsInfo}
+
+=== ПРОФИЛЬ ===
+${profileBase || 'Данные профиля не заполнены'}
+
+=== ДОПУСТИМЫЕ КАТЕГОРИИ ===
+${categoriesList}
+
+Выбери ОДНУ категорию из списка выше, которая точнее всего описывает специализацию этого разработчика.
+Верни ТОЛЬКО название категории — без номера, без кавычек, без пояснений. Ровно одну строку.`;
     }
 
     if (type === ReportType.IMPROVEMENTS) {

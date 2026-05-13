@@ -6,6 +6,7 @@ import {
 } from '../database/entities';
 import { GithubRepo } from '../database/entities/github-repo.entity';
 import { AiController } from './ai.controller';
+import { AiPublicController } from './ai-public.controller';
 import { AiService, AI_REPORTS_QUEUE } from './ai.service';
 import { AiProcessor } from './ai.processor';
 
@@ -14,7 +15,7 @@ import { AiProcessor } from './ai.processor';
     TypeOrmModule.forFeature([AiReport, Profile, Project, GithubRepo]),
     BullModule.registerQueue({ name: AI_REPORTS_QUEUE }),
   ],
-  controllers: [AiController],
+  controllers: [AiController, AiPublicController],
   providers: [AiService, AiProcessor],
   exports: [AiService],
 })

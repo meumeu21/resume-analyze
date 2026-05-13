@@ -1,0 +1,111 @@
+.gfb {
+    border: 1px solid #000;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.gfb-breadcrumb {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #000;
+    background: #f8f8f8;
+}
+
+.gfb-crumb {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    color: #333;
+}
+
+.gfb-crumb:hover {
+    text-decoration: underline;
+}
+
+.gfb-crumb-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.gfb-crumb-sep {
+    color: #aaa;
+    font-size: 14px;
+    user-select: none;
+}
+
+.gfb-status {
+    padding: 16px;
+    color: #888;
+}
+
+.gfb-error {
+    padding: 16px;
+    color: #c0392b;
+}
+
+.gfb-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.gfb-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-bottom: 1px solid #eee;
+    transition: background 0.1s;
+}
+
+.gfb-item:last-child {
+    border-bottom: none;
+}
+
+.gfb-item--dir {
+    cursor: pointer;
+}
+
+.gfb-item--dir:hover {
+    background: #f5f5f5;
+}
+
+.gfb-item:not(.gfb-item--dir) {
+    cursor: pointer;
+}
+
+.gfb-item:not(.gfb-item--dir):hover {
+    background: #f9f9f9;
+}
+
+.gfb-icon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.gfb-name {
+    flex: 1;
+    font-size: 15px;
+    word-break: break-all;
+}
+
+.gfb-item--dir .gfb-name {
+    font-weight: 500;
+}
+
+.gfb-size {
+    font-size: 13px;
+    color: #888;
+    flex-shrink: 0;
+}

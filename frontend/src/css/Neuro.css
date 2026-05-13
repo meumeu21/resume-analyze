@@ -1,4 +1,4 @@
-.neuro-banner{
+.neuro-banner {
     background-image: url(../images/neuro-banner.jpg);
     min-height: 450px;
     width: 100%;
@@ -8,4 +8,45 @@
     background-size: cover;
 
     margin-bottom: 30px;
+}
+
+.neuro-top-btns {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.neuro-tab--active {
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.neuro-resume {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+}
+
+.neuro-resume__left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.neuro-resume__right {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 180px;
+}
+
+.neuro-error {
+    color: #c0392b;
+    margin-bottom: 12px;
+}
+
+.neuro-auth-note {
+    color: #888;
+    margin-bottom: 24px;
 }

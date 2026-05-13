@@ -56,6 +56,14 @@ class EnvironmentVariables {
   @IsString()
   @IsOptional()
   ANTHROPIC_API_KEY: string;
+
+  @IsString()
+  @IsOptional()
+  GROQ_API_KEY: string;
+
+  @IsString()
+  @IsOptional()
+  GEMINI_API_KEY: string;
 }
 
 export function validate(config: Record<string, unknown>) {

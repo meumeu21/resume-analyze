@@ -9,6 +9,7 @@ export enum ReportType {
   ACTIVITY_FIELD = 'activity_field',   // сфера деятельности на основе проектов и стека
   IMPROVEMENTS = 'improvements',       // что можно улучшить / какие технологии изучить
   PROJECT_SUMMARY = 'project_summary', // резюме конкретного проекта
+  RESUME = 'resume',                   // полное резюме пользователя
 }
 
 export enum ReportStatus {

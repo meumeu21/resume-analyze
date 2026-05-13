@@ -8,8 +8,13 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { Repository } from 'typeorm';
+import * as fs from 'fs';
+import * as path from 'path';
+import PizZip from 'pizzip';
+import Docxtemplater from 'docxtemplater';
+
 import {
   AiReport, Profile, Project, ReportStatus, ReportType, User,
 } from '../database/entities';
@@ -19,10 +24,20 @@ import { GenerateReportDto } from './dto/generate-report.dto';
 
 export const AI_REPORTS_QUEUE = 'ai-reports';
 
+interface ResumeData {
+  first_name: string;
+  last_name: string;
+  job_title: string;
+  about: string;
+  hard_skills: string;
+  soft_skills: string;
+  projects: string;
+}
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
-  private readonly client: Anthropic;
+  private readonly client: OpenAI;
 
   constructor(
     private readonly config: ConfigService,
@@ -32,8 +47,9 @@ export class AiService {
     @InjectRepository(GithubRepo) private readonly githubRepoRepo: Repository<GithubRepo>,
     @InjectQueue(AI_REPORTS_QUEUE) private readonly aiQueue: Queue,
   ) {
-    this.client = new Anthropic({
-      apiKey: this.config.get<string>('ANTHROPIC_API_KEY') ?? undefined,
+    this.client = new OpenAI({
+      apiKey: this.config.get<string>('GEMINI_API_KEY'),
+      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
     });
   }
 
@@ -61,8 +77,7 @@ export class AiService {
     );
 
     await this.aiQueue.add('process-report', { reportId: report.id }, {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 5000 },
+      attempts: 1,
     });
     this.logger.log(`AI report ${report.id} queued`);
 
@@ -81,6 +96,11 @@ export class AiService {
       return;
     }
 
+    if (report.reportType === ReportType.RESUME) {
+      await this.processResumeReport(report, profile);
+      return;
+    }
+
     let project: Project | null = null;
     let githubRepo: GithubRepo | null = null;
     let allProjects: Project[] = [];
@@ -96,21 +116,20 @@ export class AiService {
 
     try {
       const prompt = this.buildPrompt(report.reportType, profile, project, githubRepo, allProjects);
-      const message = await this.client.messages.create({
-        model: 'claude-haiku-4-5',
-        max_tokens: 100,
-        system: this.systemPrompt(),
-        messages: [{ role: 'user', content: prompt }],
+      const completion = await this.client.chat.completions.create({
+        model: 'gemini-2.5-flash',
+        max_tokens: 1500,
+        messages: [
+          { role: 'system', content: this.systemPrompt() },
+          { role: 'user', content: prompt },
+        ],
       });
 
-      const text = message.content
-        .filter((b) => b.type === 'text')
-        .map((b) => (b as { type: 'text'; text: string }).text)
-        .join('\n');
+      const text = completion.choices[0]?.message?.content ?? '';
 
       report.status = ReportStatus.DONE;
       report.summary = text;
-      report.rawResponse = message as unknown as Record<string, unknown>;
+      report.rawResponse = completion as unknown as Record<string, unknown>;
 
       if (report.reportType === ReportType.ACTIVITY_FIELD) {
         profile.activityField = text.trim().split('\n')[0].replace(/^[#*\s]+/, '');
@@ -124,6 +143,82 @@ export class AiService {
 
     await this.reportRepo.save(report);
     this.logger.log(`AI report ${reportId} finished with status ${report.status}`);
+  }
+
+  private async processResumeReport(report: AiReport, profile: Profile): Promise<void> {
+    const publicProjects = await this.projectRepo.find({
+      where: { userId: report.userId, isPublic: true },
+      order: { createdAt: 'DESC' },
+    });
+
+    try {
+      const prompt = this.buildResumePrompt(profile, publicProjects);
+      const completion = await this.client.chat.completions.create({
+        model: 'gemini-2.5-flash',
+        max_tokens: 2000,
+        messages: [
+          { role: 'system', content: this.resumeSystemPrompt() },
+          { role: 'user', content: prompt },
+        ],
+      });
+
+      const rawText = completion.choices[0]?.message?.content ?? '';
+
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('AI вернул некорректный JSON');
+
+      const resumeData: ResumeData = JSON.parse(jsonMatch[0]);
+
+      report.status = ReportStatus.DONE;
+      report.rawResponse = resumeData as unknown as Record<string, unknown>;
+      report.summary = this.formatResumeSummary(resumeData);
+    } catch (err) {
+      report.status = ReportStatus.ERROR;
+      report.errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
+      this.logger.error(`Resume report ${report.id} failed: ${report.errorMessage}`);
+    }
+
+    await this.reportRepo.save(report);
+    this.logger.log(`Resume report ${report.id} finished with status ${report.status}`);
+  }
+
+  async generateResumeDocx(reportId: string, userId: string): Promise<Buffer> {
+    const report = await this.reportRepo.findOne({ where: { id: reportId, userId } });
+    if (!report) throw new NotFoundException('Отчёт не найден');
+    if (report.reportType !== ReportType.RESUME) throw new BadRequestException('Не является отчётом резюме');
+    if (report.status !== ReportStatus.DONE) throw new BadRequestException('Отчёт ещё не готов');
+    if (!report.rawResponse) throw new BadRequestException('Нет данных резюме');
+
+    const data = report.rawResponse as unknown as ResumeData;
+
+    const templatePath = path.join(process.cwd(), 'templates', 'resume-template.docx');
+    const content = fs.readFileSync(templatePath);
+
+    const zip = new PizZip(content);
+
+    // Добавляем плейсхолдеры для полей, которые в шаблоне пока без фигурных скобок
+    const docFile = zip.file('word/document.xml');
+    if (!docFile) throw new Error('Шаблон резюме повреждён: нет document.xml');
+    let docXml = docFile.asText();
+    docXml = docXml
+      .replace(/<w:t>N A M E<\/w:t>/g, '<w:t>{first_name}</w:t>')
+      .replace(/<w:t>S U R N A M E<\/w:t>/g, '<w:t>{last_name}</w:t>')
+      .replace(/<w:t>J O B   T I T L E<\/w:t>/g, '<w:t>{job_title}</w:t>');
+    zip.file('word/document.xml', docXml);
+
+    const doc = new Docxtemplater(zip, { linebreaks: true, paragraphLoop: true });
+
+    doc.render({
+      first_name: data.first_name || '',
+      last_name: data.last_name || '',
+      job_title: data.job_title || '',
+      about: data.about || '',
+      hard_skills: data.hard_skills || '',
+      soft_skills: data.soft_skills || '',
+      projects: data.projects || '',
+    });
+
+    return doc.getZip().generate({ type: 'nodebuffer' }) as Buffer;
   }
 
   async getMyReports(userId: string, pagination: PaginationDto): Promise<PagedResult<AiReport>> {
@@ -165,6 +260,92 @@ export class AiService {
     if (!report) throw new NotFoundException('Отчёт не найден');
     report.isPublic = !report.isPublic;
     return this.reportRepo.save(report);
+  }
+
+  private resumeSystemPrompt(): string {
+    return `Ты профессиональный HR-копирайтер для IT-специалистов.
+Твоя задача — не просто скопировать данные, а превратить их в сильный, живой текст резюме.
+Интерпретируй навыки и опыт выгодно: покажи сильные стороны, раскрой ценность каждого умения.
+Пиши по-русски, профессионально, без клише. Без воды, но убедительно.
+Отвечай ТОЛЬКО JSON-объектом без markdown, без пояснений, без лишнего текста.
+Если данных нет — оставь поле пустой строкой.`;
+  }
+
+  private buildResumePrompt(profile: Profile, publicProjects: Project[]): string {
+    const skillNames = profile.hardSkills.map((s) => `${s.name} (уровень ${s.level}/5)`);
+
+    const projectsText = publicProjects.length
+      ? publicProjects.map((p) => [
+          `- ${p.title}${p.role ? ` (роль: ${p.role})` : ''}`,
+          p.description ? `  Описание: ${p.description}` : null,
+          p.stack.length ? `  Стек: ${p.stack.join(', ')}` : null,
+          p.tags.length ? `  Теги: ${p.tags.join(', ')}` : null,
+        ].filter(Boolean).join('\n')).join('\n\n')
+      : 'Публичные проекты не указаны';
+
+    return `Вот сырые данные разработчика. На их основе создай текст для резюме — не просто форматируй, а осмысли и улучши.
+
+=== ДАННЫЕ ПРОФИЛЯ ===
+Имя: ${profile.firstName || '(не указано)'}
+Фамилия: ${profile.lastName || '(не указано)'}
+Сфера деятельности: ${profile.activityField || 'не указана'}
+О себе (черновик): ${profile.bio || 'не указано'}
+Технические навыки: ${skillNames.length ? skillNames.join(', ') : 'не указаны'}
+Soft skills: ${profile.softSkills.length ? profile.softSkills.join(', ') : 'не указаны'}
+
+=== ПУБЛИЧНЫЕ ПРОЕКТЫ ===
+${projectsText}
+
+=== ИНСТРУКЦИИ ===
+Создай JSON со следующими полями. В каждом поле пиши связный, живой текст — не просто копируй данные:
+
+- "first_name": имя (берёшь как есть)
+- "last_name": фамилия (берёшь как есть)
+- "job_title": определи точную должность на английском (например: Frontend Developer, Full-Stack Engineer, Python Developer)
+- "about": 2-3 предложения — профессиональный summary. Расскажи кто этот разработчик, что умеет, чем ценен. Опирайся на навыки и проекты.
+- "hard_skills": 1-2 предложения про технические компетенции. Выдели главную экспертизу, покажи как навыки дополняют друг друга. Например: "Уверенное владение Python как основным языком разработки, дополненное знанием Java для enterprise-задач."
+- "soft_skills": 1-2 предложения, раскрывающие личные качества через их практическую ценность. Не просто перечисляй — объясняй зачем они важны.
+- "projects": для каждого публичного проекта — одна строка с переносом: "Название\\nОписание: что сделано, какую задачу решает, почему это круто. Стек: ...". Если проектов нет — пустая строка.
+
+Верни ТОЛЬКО JSON:
+{
+  "first_name": "...",
+  "last_name": "...",
+  "job_title": "...",
+  "about": "...",
+  "hard_skills": "...",
+  "soft_skills": "...",
+  "projects": "..."
+}`;
+  }
+
+  private formatResumeSummary(data: ResumeData): string {
+    const lines: string[] = [];
+    if (data.job_title) lines.push(data.job_title);
+    if (data.first_name || data.last_name) lines.push(`${data.first_name} ${data.last_name}`.trim());
+    if (lines.length) lines.push('');
+
+    if (data.about) {
+      lines.push('О себе:');
+      lines.push(data.about);
+      lines.push('');
+    }
+    if (data.hard_skills) {
+      lines.push('Инструменты:');
+      lines.push(data.hard_skills);
+      lines.push('');
+    }
+    if (data.soft_skills) {
+      lines.push('Soft Skills:');
+      lines.push(data.soft_skills);
+      lines.push('');
+    }
+    if (data.projects) {
+      lines.push('Проекты:');
+      lines.push(data.projects);
+    }
+
+    return lines.join('\n');
   }
 
   private systemPrompt(): string {

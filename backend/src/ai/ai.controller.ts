@@ -1,6 +1,7 @@
 import {
-  Body, Controller, Get, Param, Patch, Post, Query, UseGuards,
+  Body, Controller, Get, Param, Patch, Post, Query, Res, UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -34,5 +35,20 @@ export class AiController {
   @Patch('reports/:id/visibility')
   toggleVisibility(@Param('id') id: string, @CurrentUser() user: User) {
     return this.aiService.toggleVisibility(id, user.id);
+  }
+
+  @Get('reports/:id/download')
+  async downloadResume(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.aiService.generateResumeDocx(id, user.id);
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': 'attachment; filename="resume.docx"',
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
   }
 }

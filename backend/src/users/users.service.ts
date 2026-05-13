@@ -45,7 +45,7 @@ export class UsersService {
     }
 
     if (query.activityField) {
-      qb.andWhere('profile.activityField = :activityField', { activityField: query.activityField });
+      qb.andWhere('profile.activityField ILIKE :activityField', { activityField: query.activityField });
     }
 
     if (query.skills?.length) {

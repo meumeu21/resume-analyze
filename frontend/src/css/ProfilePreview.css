@@ -10,6 +10,12 @@
     border-radius: 10px;
 
     margin-top: 10px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.profile-preview:hover {
+    border-color: #555;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
 }
 
 .profile-preview__data{

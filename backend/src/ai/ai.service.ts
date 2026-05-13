@@ -97,8 +97,8 @@ export class AiService {
     try {
       const prompt = this.buildPrompt(report.reportType, profile, project, githubRepo, allProjects);
       const message = await this.client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1500,
+        model: 'claude-haiku-4-5',
+        max_tokens: 100,
         system: this.systemPrompt(),
         messages: [{ role: 'user', content: prompt }],
       });

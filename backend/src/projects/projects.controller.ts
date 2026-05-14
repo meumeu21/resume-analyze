@@ -44,6 +44,11 @@ export class ProjectsController {
     return this.projectsService.getMyFavorites(user.id);
   }
 
+  @Get('daily')
+  getDailyProject() {
+    return this.projectsService.getDailyProject();
+  }
+
   @Get(':id')
   @UseGuards(JwtOptionalGuard)
   findOne(@Param('id') id: string, @CurrentUser() user: User | null) {

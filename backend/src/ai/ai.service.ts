@@ -286,6 +286,48 @@ export class AiService {
     return doc.getZip().generate({ type: 'nodebuffer' }) as Buffer;
   }
 
+  async ensurePublicProjectSummary(projectId: string): Promise<AiReport> {
+    const project = await this.projectRepo.findOne({ where: { id: projectId, isPublic: true } });
+    if (!project) throw new NotFoundException('Проект не найден или не является публичным');
+
+    const existing = await this.reportRepo.findOne({
+      where: { projectId, reportType: ReportType.PROJECT_SUMMARY, isPublic: true, status: ReportStatus.DONE },
+      order: { createdAt: 'DESC' },
+    });
+    if (existing) return existing;
+
+    const profile = await this.profileRepo.findOne({ where: { userId: project.userId } });
+    const githubRepo = project.githubRepoId
+      ? await this.githubRepoRepo.findOne({ where: { id: project.githubRepoId } })
+      : null;
+
+    const safeProfile = profile ?? ({ hardSkills: [], softSkills: [], bio: null, activityField: null } as unknown as Profile);
+    const prompt = this.buildPrompt(ReportType.PROJECT_SUMMARY, safeProfile, project, githubRepo, []);
+
+    const completion = await this.client.chat.completions.create({
+      model: 'gemini-2.5-flash',
+      max_tokens: 800,
+      messages: [
+        { role: 'system', content: this.systemPrompt() },
+        { role: 'user', content: prompt },
+      ],
+    });
+
+    const text = completion.choices[0]?.message?.content ?? '';
+
+    return this.reportRepo.save(
+      this.reportRepo.create({
+        userId: project.userId,
+        projectId: project.id,
+        reportType: ReportType.PROJECT_SUMMARY,
+        status: ReportStatus.DONE,
+        summary: text,
+        rawResponse: completion as unknown as Record<string, unknown>,
+        isPublic: true,
+      }),
+    );
+  }
+
   async getProjectSummaryReport(userId: string, projectId: string): Promise<AiReport | null> {
     return this.reportRepo.findOne({
       where: { userId, projectId, reportType: ReportType.PROJECT_SUMMARY },

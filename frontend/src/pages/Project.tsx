@@ -857,7 +857,11 @@ function Project() {
               )}
 
               <div className="project-footer">
-                <p className="text bold">{authorNickname ? `© ${authorNickname}` : ''}</p>
+                {authorNickname && (
+                  <Link to={`/users/${project.userId}`} className="text bold link">
+                    © {authorNickname}
+                  </Link>
+                )}
                 {(project.startedAt || project.finishedAt) && (
                   <p className="text">
                     {project.startedAt

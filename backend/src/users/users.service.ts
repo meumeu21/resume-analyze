@@ -256,6 +256,41 @@ export class UsersService {
     return this.profileRepo.save(profile);
   }
 
+  async getTopByFollowers(count: number) {
+    return this.profileRepo.manager.query<{
+      userId: string;
+      nickname: string;
+      firstName: string | null;
+      lastName: string | null;
+      avatarUrl: string | null;
+      activityField: string | null;
+      followersCount: number;
+      projectsCount: number;
+    }[]>(`
+      SELECT
+        profile.user_id            AS "userId",
+        profile.nickname,
+        profile.first_name         AS "firstName",
+        profile.last_name          AS "lastName",
+        profile.avatar_url         AS "avatarUrl",
+        profile.activity_field     AS "activityField",
+        COALESCE(fc.followers_count, 0)::int AS "followersCount",
+        (
+          SELECT COUNT(*)::int FROM projects
+          WHERE user_id = profile.user_id AND is_public = true
+        ) AS "projectsCount"
+      FROM profiles profile
+      LEFT JOIN (
+        SELECT following_id, COUNT(*)::int AS followers_count
+        FROM follows
+        GROUP BY following_id
+      ) fc ON fc.following_id = profile.user_id
+      WHERE profile.is_profile_public = true
+      ORDER BY COALESCE(fc.followers_count, 0) DESC, RANDOM()
+      LIMIT $1
+    `, [count]);
+  }
+
   private profileFields(profile: Profile) {
     return {
       nickname: profile.nickname,

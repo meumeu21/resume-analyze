@@ -101,6 +101,11 @@ export class UsersController {
     return this.usersService.getFollowing(user.id, user.id);
   }
 
+  @Get('top-followed')
+  getTopFollowed() {
+    return this.usersService.getTopByFollowers(3);
+  }
+
   @Get(':id')
   @UseGuards(JwtOptionalGuard)
   findOne(@Param('id') id: string, @CurrentUser() user: User | null) {

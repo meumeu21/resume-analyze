@@ -10,6 +10,17 @@ export interface ProjectSummary {
   createdAt: string;
 }
 
+export interface TopFollowedUser {
+  userId: string;
+  nickname: string;
+  firstName: string | null;
+  lastName: string | null;
+  avatarUrl: string | null;
+  activityField: string | null;
+  followersCount: number;
+  projectsCount: number;
+}
+
 export interface UserCard {
   userId: string;
   nickname: string;
@@ -202,6 +213,12 @@ export function getMyFollowing(accessToken: string) {
   });
 }
 
+export function getTopFollowedUsers() {
+  return request<TopFollowedUser[]>('/api/users/top-followed', {
+    method: 'GET',
+  });
+}
+
 export function updateProfileInfo(
   accessToken: string,
   data: Partial<{
@@ -218,3 +235,4 @@ export function updateProfileInfo(
     body: JSON.stringify(data),
   });
 }
+

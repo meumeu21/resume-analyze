@@ -130,6 +130,23 @@ export class ProjectsService {
     await this.favoriteRepo.remove(fav);
   }
 
+  async getDailyProject() {
+    const count = await this.projectRepo.count({ where: { isPublic: true } });
+    if (count === 0) return null;
+
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const offset = parseInt(today, 10) % count;
+
+    const [project] = await this.projectRepo.find({
+      where: { isPublic: true },
+      relations: ['user', 'user.profile'],
+      order: { createdAt: 'ASC' },
+      skip: offset,
+      take: 1,
+    });
+    return project ?? null;
+  }
+
   async getMyFavorites(userId: string) {
     const favorites = await this.favoriteRepo.find({
       where: { userId },

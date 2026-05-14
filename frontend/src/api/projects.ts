@@ -50,6 +50,32 @@ export interface UpdateProjectData {
   finishedAt?: string;
 }
 
+export interface DailyProjectAuthor {
+  nickname: string;
+  firstName: string | null;
+  lastName: string | null;
+  avatarUrl: string | null;
+  activityField: string | null;
+}
+
+export interface DailyProjectResponse {
+  id: string;
+  userId: string;
+  title: string;
+  description: string | null;
+  role: string | null;
+  stack: string[];
+  tags: string[];
+  demoUrl: string | null;
+  repoUrl: string | null;
+  isPublic: boolean;
+  createdAt: string;
+  user: {
+    id: string;
+    profile: DailyProjectAuthor;
+  };
+}
+
 async function request<T>(url: string, options: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...options,
@@ -133,6 +159,12 @@ export function deleteProject(id: string, accessToken: string) {
   return request<void>(`/api/projects/${id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function getDailyProject() {
+  return request<DailyProjectResponse | null>('/api/projects/daily', {
+    method: 'GET',
   });
 }
 

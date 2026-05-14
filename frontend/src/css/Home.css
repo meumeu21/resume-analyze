@@ -33,3 +33,153 @@
     justify-content: space-between;
     align-items: center;
 }
+
+.home__sections {
+    display: flex;
+    flex-direction: column;
+    gap: 80px;
+    padding: 70px 0 90px;
+}
+
+.home__section-title {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #999;
+    margin: 0 0 24px 0;
+}
+
+/* ── Проект дня ─────────────────────────────────── */
+
+.daily-project {
+    background: #111;
+    color: #fff;
+    border-radius: 16px;
+    padding: 36px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.daily-project__top {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.daily-project__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.daily-project__tag {
+    font-family: 'Gilroy', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #ccc;
+    border-radius: 999px;
+    padding: 4px 14px;
+    white-space: nowrap;
+}
+
+.daily-project__link {
+    flex-shrink: 0;
+    background: #fff;
+    color: #000;
+}
+
+.daily-project__link:hover {
+    background: linear-gradient(90deg, #ECEBFF, #FAE2FF, #BEEBFF, #FFE6BD);
+    color: #000;
+}
+
+.daily-project__title {
+    font-size: 32px;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.15;
+    color: #fff;
+}
+
+.daily-project__author {
+    font-family: 'Gilroy', sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    color: #888;
+    text-decoration: none;
+}
+
+.daily-project__author:hover {
+    color: #ccc;
+    text-decoration: underline;
+}
+
+.daily-project__section {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.daily-project__section-label {
+    font-family: 'Gilroy', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #666;
+    margin: 0;
+}
+
+.daily-project__desc {
+    font-family: 'Gilroy', sans-serif;
+    font-size: 18px;
+    font-weight: 300;
+    color: #ddd;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.daily-project__ai {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.daily-project__ai-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.daily-project__ai-icon {
+    width: 18px;
+    height: 18px;
+    filter: invert(1) brightness(0.6);
+}
+
+.daily-project__ai-text {
+    font-family: 'Gilroy', sans-serif;
+    font-size: 17px;
+    font-weight: 300;
+    color: #ccc;
+    line-height: 1.65;
+    margin: 0;
+}
+
+.daily-project__ai-text--empty {
+    color: #555;
+    font-style: italic;
+}

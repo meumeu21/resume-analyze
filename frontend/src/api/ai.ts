@@ -88,6 +88,12 @@ export function getPublicProjectSummary(projectId: string) {
   });
 }
 
+export function ensurePublicProjectSummary(projectId: string) {
+  return request<AiReport>(`/api/ai/public/projects/${projectId}/summary/ensure`, {
+    method: 'GET',
+  });
+}
+
 export function toggleReportVisibility(accessToken: string, reportId: string) {
   return request<AiReport>(`/api/ai/reports/${reportId}/visibility`, {
     method: 'PATCH',

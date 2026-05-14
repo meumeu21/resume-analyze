@@ -11,4 +11,9 @@ export class AiPublicController {
   getPublicProjectSummary(@Param('projectId') projectId: string) {
     return this.aiService.getPublicProjectSummaryReport(projectId);
   }
+
+  @Get('projects/:projectId/summary/ensure')
+  ensurePublicProjectSummary(@Param('projectId') projectId: string) {
+    return this.aiService.ensurePublicProjectSummary(projectId);
+  }
 }

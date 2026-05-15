@@ -9,6 +9,7 @@ interface AuthContextValue {
   isLoading: boolean;
   signIn: (tokens: { accessToken: string; refreshToken: string }) => Promise<void>;
   signOut: () => Promise<void>;
+  updateUser: (patch: Partial<MeResponse['profile']>) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -49,6 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(me);
   }
 
+  function updateUser(patch: Partial<MeResponse['profile']>) {
+    setUser((prev) => prev ? { ...prev, profile: { ...prev.profile, ...patch } } : prev);
+  }
+
   async function signOut() {
     if (accessToken) {
       await apiLogout(accessToken).catch(() => {});
@@ -61,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, accessToken, refreshToken, isLoading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, accessToken, refreshToken, isLoading, signIn, signOut, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -85,7 +85,7 @@ function contactsToState(contacts: ContactLink[]): ContactsState {
 
 function ProfilePage() {
   const { id } = useParams<{ id: string }>();
-  const { user, signOut, accessToken, isLoading } = useAuth();
+  const { user, signOut, accessToken, isLoading, updateUser } = useAuth();
   const navigate = useNavigate();
 
   const isOwn = id === 'me';
@@ -339,6 +339,7 @@ function ProfilePage() {
     try {
       const { avatarUrl: newUrl } = await uploadAvatar(accessToken, file);
       setMyProfile((prev) => prev ? { ...prev, avatarUrl: newUrl } : prev);
+      updateUser({ avatarUrl: newUrl });
     } catch {} finally {
       setAvatarUploading(false);
       e.target.value = '';
@@ -471,13 +472,13 @@ function ProfilePage() {
                   ) : (
                     <>
                       {otherProfile?.followersCount != null && (
-                        <ProfileMetrics type="subs" number={otherProfile.followersCount} />
+                        <ProfileMetrics type="subs" number={otherProfile.followersCount} clickable={false} />
                       )}
                       {otherProfile?.followingCount != null && (
-                        <ProfileMetrics type="subsrciptions" number={otherProfile.followingCount} />
+                        <ProfileMetrics type="subsrciptions" number={otherProfile.followingCount} clickable={false} />
                       )}
                       {otherProfile?.favoritesCount != null && (
-                        <ProfileMetrics type="favourites" number={otherProfile.favoritesCount} />
+                        <ProfileMetrics type="favourites" number={otherProfile.favoritesCount} clickable={false} />
                       )}
                     </>
                   )}

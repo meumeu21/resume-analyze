@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ProfilePreview from "../components/ProfilePreview";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -32,7 +32,7 @@ function Subscriptions() {
             <div className="container page">
                 <h1 className="page-h1">Подписки</h1>
 
-                <Link to={"/users/me"} className="text link">Назад</Link>
+                <button onClick={() => navigate(-1)} className="text link" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Назад</button>
 
                 {loading ? (
                     <p className="text">Загрузка...</p>

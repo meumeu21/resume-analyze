@@ -281,7 +281,6 @@ export class GithubService {
 
       if (data.encoding === 'base64') {
         const text = Buffer.from(data.content, 'base64').toString('utf-8');
-        // убираем markdown-разметку и берём первые 500 символов
         return text.replace(/[#*`[\]>-]/g, '').trim().slice(0, 500) || null;
       }
 

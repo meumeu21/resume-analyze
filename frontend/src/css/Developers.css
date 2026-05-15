@@ -88,7 +88,7 @@
     filter: invert(1);
 }
 
-/* Панель фильтров — выезжает вниз */
+/* панель фильтров */
 .developers-filters-wrap {
     overflow: hidden;
     max-height: 0;
@@ -133,7 +133,7 @@
     border-color: #000;
 }
 
-/* Результаты — сетка 2 колонки */
+/* результаты */
 .developers-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);

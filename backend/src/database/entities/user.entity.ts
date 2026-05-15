@@ -53,11 +53,9 @@ export class User {
   @OneToMany(() => ProfileView, (v) => v.profileOwner)
   profileViews: ProfileView[];
 
-  // подписки: на кого подписан этот пользователь
   @OneToMany(() => Follow, (f) => f.follower)
   following: Follow[];
 
-  // подписчики: кто подписан на этого пользователя
   @OneToMany(() => Follow, (f) => f.following)
   followers: Follow[];
 

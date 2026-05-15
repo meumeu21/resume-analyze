@@ -61,9 +61,7 @@ function Neuro() {
         setIsGeneratingRec(true);
         startPolling(latestRec.id, 'recommendations');
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
   function startPolling(reportId: string, type: Tab) {
@@ -85,9 +83,7 @@ function Neuro() {
             setIsGeneratingRec(false);
           }
         }
-      } catch {
-        // retry on next tick
-      }
+      } catch {}
     }, 3000);
   }
 

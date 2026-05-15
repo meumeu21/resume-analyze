@@ -30,8 +30,6 @@ async function bootstrap() {
 
   const port = config.get<number>('app.port') ?? 3000;
   await app.listen(port);
-
-  console.log(`Backend running on http://localhost:${port}/api`);
 }
 
 bootstrap();

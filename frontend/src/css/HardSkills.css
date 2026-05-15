@@ -1,4 +1,4 @@
-/* ── view mode ── */
+/* view mode */
 .hardskills-view {
   display: flex;
   flex-direction: row;
@@ -21,7 +21,7 @@
   color: #666;
 }
 
-/* ── edit mode ── */
+/* edit mode */
 .hardskills-editor {
   display: flex;
   flex-direction: column;

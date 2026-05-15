@@ -13,8 +13,6 @@ import * as path from 'path';
 const DB_URL = 'postgresql://resume_user:resume_pass_local@localhost:5433/resume_analyze';
 const DEMO_PASSWORD = 'Demo2024!';
 
-// ─── Данные пользователей ────────────────────────────────────────────────────
-
 const users = [
   {
     email: 'kirill@commit.demo',
@@ -282,7 +280,7 @@ const users = [
   },
 ];
 
-// ─── Утилиты ─────────────────────────────────────────────────────────────────
+// ─Утилиты ─────────────────────────────────────────────────────────────────
 
 function pgArr(arr: string[]): string {
   return `'{${arr.map((s) => `"${s.replace(/"/g, '\\"')}"`).join(',')}}'`;
@@ -292,7 +290,7 @@ function pgJsonb(obj: unknown): string {
   return `'${JSON.stringify(obj).replace(/'/g, "''")}'::jsonb`;
 }
 
-// ─── Основная функция ────────────────────────────────────────────────────────
+// ─Основная функция ────────────────────────────────────────────────────────
 
 async function main() {
   const client = new Client({ connectionString: DB_URL });
@@ -305,7 +303,6 @@ async function main() {
   const credentials: { email: string; nickname: string; name: string }[] = [];
 
   for (const u of users) {
-    // Проверяем, нет ли уже такого пользователя
     const exists = await client.query('SELECT id FROM users WHERE email = $1', [u.email]);
     if (exists.rows.length > 0) {
       console.log(`⚠️  Пользователь ${u.email} уже существует, пропускаю.`);
@@ -366,7 +363,7 @@ async function main() {
 
   await client.end();
 
-  // ─── Таблица с данными для входа ──────────────────────────────────────────
+  // ─Таблица с данными для входа ──────────────────────────────────────────
 
   console.log('\n');
   console.log('╔══════════════════════════════════════════════════════════════════════════╗');
@@ -381,7 +378,6 @@ async function main() {
   console.log('╚══════════════════════════════════════════════════════════════════════════╝');
   console.log('\nЭти данные также сохранены в: backend/scripts/DEMO_ACCOUNTS.md\n');
 
-  // Сохраняем в файл
   const md = [
     '# Демо-аккаунты для защиты проекта',
     '',

@@ -21,18 +21,15 @@ export class ProjectFile {
   @JoinColumn({ name: 'project_id' })
   project: Project;
 
-  // URL сохранённого файла (S3/локальное хранилище)
   @Column({ name: 'file_url' })
   fileUrl: string;
 
-  // оригинальное имя файла при загрузке
   @Column({ name: 'original_name' })
   originalName: string;
 
   @Column({ type: 'enum', enum: ProjectFileType })
   type: ProjectFileType;
 
-  // порядок отображения
   @Column({ name: 'sort_order', default: 0 })
   sortOrder: number;
 

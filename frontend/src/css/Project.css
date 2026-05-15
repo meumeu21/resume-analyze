@@ -98,7 +98,7 @@
     max-width: 100%;
 }
 
-/* ── навигация ── */
+/* навигация */
 .project-nav {
     display: flex;
     flex-direction: row;
@@ -118,7 +118,7 @@
     margin-bottom: 10px;
 }
 
-/* ── секция ── */
+/* секция */
 .project-section {
     display: flex;
     flex-direction: column;
@@ -138,12 +138,12 @@
     flex-wrap: wrap;
 }
 
-/* ── редактирование ── */
+/* редактирование */
 .project-editor {
     margin-top: 20px;
 }
 
-/* ── табы ── */
+/* табы */
 .project-tabs {
     display: flex;
     flex-direction: row;
@@ -167,7 +167,7 @@
     font-weight: 600;
 }
 
-/* ── форма редактирования ── */
+/* форма редактирования */
 .project-edit-form {
     display: flex;
     flex-direction: column;
@@ -216,7 +216,7 @@
     accent-color: #000;
 }
 
-/* ── stack chips ── */
+/* stack chips */
 .stack-chips {
     display: flex;
     flex-wrap: wrap;
@@ -263,7 +263,7 @@
     flex: 1;
 }
 
-/* ── файлы ── */
+/* файлы */
 .project-files-list {
     display: flex;
     flex-direction: column;
@@ -306,14 +306,14 @@
     color: #666;
 }
 
-/* ── demo link in header ── */
+/* demo link in header */
 .project-demo-link {
     font-size: 16px;
     padding: 6px 18px;
     text-decoration: none;
 }
 
-/* ── date range fields ── */
+/* date range fields */
 .project-dates-row {
     display: flex;
     flex-direction: row;
@@ -327,7 +327,7 @@
     flex: 1;
 }
 
-/* ── github repo meta (view mode) ── */
+/* github repo meta (view mode) */
 .project-github-meta {
     display: flex;
     flex-direction: row;
@@ -350,7 +350,7 @@
     color: #555;
 }
 
-/* ── github tab ── */
+/* github tab */
 .project-github-error {
     display: flex;
     flex-direction: column;
@@ -384,7 +384,7 @@
     font-size: 14px;
 }
 
-/* ── AI описание ── */
+/* ai описание */
 .project-ai-card {
     margin-top: 32px;
     border: 1px solid #000;

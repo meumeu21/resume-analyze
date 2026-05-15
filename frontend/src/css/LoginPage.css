@@ -8,7 +8,7 @@
   align-items: center;
 }
 
-/* Карточка */
+/* карточка */
 .card {
   width: 400px;
   padding: 30px;
@@ -38,7 +38,7 @@
   border-radius: 6px;
 }
 
-/* Кнопки */
+/* кнопки */
 .login-btn {
   background: black;
   color: white;
@@ -71,7 +71,7 @@
   text-decoration: underline;
 }
 
-/* Шарики */
+/* шарики */
 .bubble {
   position: absolute;
   border-radius: 50%;
@@ -119,7 +119,7 @@
   left: 15%;
 }
 
-/* Анимация */
+/* анимация */
 @keyframes float {
   0% {
     transform: translateY(0px) translateX(0px);

@@ -30,7 +30,6 @@ export class ContactLink {
   @Column()
   url: string;
 
-  // контакты видны только авторизованным
   @Column({ name: 'is_public', default: false })
   isPublic: boolean;
 }

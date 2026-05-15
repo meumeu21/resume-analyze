@@ -261,7 +261,6 @@ export class AiService {
 
     const zip = new PizZip(content);
 
-    // Добавляем плейсхолдеры для полей, которые в шаблоне пока без фигурных скобок
     const docFile = zip.file('word/document.xml');
     if (!docFile) throw new Error('Шаблон резюме повреждён: нет document.xml');
     let docXml = docFile.asText();

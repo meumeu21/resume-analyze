@@ -37,17 +37,14 @@ export class Profile {
   @Column({ name: 'soft_skills', type: 'text', array: true, default: [] })
   softSkills: string[];
 
-  // [{name: "TypeScript", level: 4}, ...] — для radar chart и фильтрации
+  // [{name: "TypeScript", level: 4},]
   @Column({ name: 'skill_levels', type: 'jsonb', default: [] })
   hardSkills: { name: string; level: number }[] = [];
 
   // {x: -5..5, y: -5..5}
-  // x: низкоуровневое - высокоуровневое
-  // y: продуктовый подход - инженерный подход
   @Column({ type: 'jsonb', nullable: true })
   coordinates: { x: number; y: number } | null = null;
 
-  // определяется AI на основе проектов
   @Column({ name: 'activity_field', type: 'varchar', nullable: true })
   activityField!: string | null;
 

@@ -157,7 +157,7 @@ export class UsersService {
 
     if (profile.avatarUrl?.startsWith('/uploads/')) {
       const oldFile = path.join(process.cwd(), profile.avatarUrl);
-      try { fs.unlinkSync(oldFile); } catch { /* файл уже удалён */ }
+      try { fs.unlinkSync(oldFile); } catch {}
     }
 
     const avatarUrl = `/uploads/${file.filename}`;
@@ -172,7 +172,7 @@ export class UsersService {
 
     if (profile.avatarUrl?.startsWith('/uploads/')) {
       const oldFile = path.join(process.cwd(), profile.avatarUrl);
-      try { fs.unlinkSync(oldFile); } catch { /* файл уже удалён */ }
+      try { fs.unlinkSync(oldFile); } catch {}
     }
 
     profile.avatarUrl = null;

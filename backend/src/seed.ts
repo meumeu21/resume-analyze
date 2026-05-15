@@ -30,8 +30,6 @@ const db = new DataSource({
   logging: false,
 });
 
-// ── Данные для сида ───────────────────────────────────────────────────────────
-
 const SEED_PASSWORD = 'password123';
 
 const SEED_USERS = [
@@ -173,9 +171,6 @@ const SEED_USERS = [
 ];
 
 // Матрица подписок: [followerIdx, followingIdx]
-// Иван (0) и Мария (1) — по 4 подписчика (tied → рандомный порядок на главной)
-// Алексей (2) и Дарья (3) — по 2 подписчика (tied)
-// Никита (4) — 0 подписчиков
 const FOLLOWS = [
   [1, 0], [2, 0], [3, 0], [4, 0], // все подписаны на Ивана
   [0, 1], [2, 1], [3, 1], [4, 1], // все подписаны на Марию
@@ -183,7 +178,7 @@ const FOLLOWS = [
   [0, 3], [1, 3],                  // Иван и Мария подписаны на Дарью
 ];
 
-// ── Сид ───────────────────────────────────────────────────────────────────────
+// Сид ───────────────────────────────────────────────────────────────────────
 
 async function seed() {
   await db.initialize();
@@ -197,7 +192,7 @@ async function seed() {
   const passwordHash = await bcrypt.hash(SEED_PASSWORD, 10);
   const createdUsers: User[] = [];
 
-  // ── Пользователи и профили ────────────────────────────────────────────────
+  // Пользователи и профили ────────────────────────────────────────────────
   for (const data of SEED_USERS) {
     let user = await userRepo.findOne({ where: { email: data.email } });
 
@@ -245,7 +240,7 @@ async function seed() {
     createdUsers.push(user);
   }
 
-  // ── Подписки ─────────────────────────────────────────────────────────────
+  // Подписки ─────────────────────────────────────────────────────────────
   console.log('\nCreating follows...');
   let followsCreated = 0;
 
@@ -268,7 +263,7 @@ async function seed() {
 
   console.log(`  ✓ ${followsCreated} follow(s) created`);
 
-  // ── Итог ─────────────────────────────────────────────────────────────────
+  // Итог ─────────────────────────────────────────────────────────────────
   console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('Seed complete!');
   console.log(`Password for all accounts: ${SEED_PASSWORD}`);

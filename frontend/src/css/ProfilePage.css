@@ -130,7 +130,7 @@
     gap: 30px;
 }
 
-/* ── avatar edit ── */
+/* avatar edit */
 .profile-avatar--editable {
     position: relative;
     cursor: pointer;
@@ -154,7 +154,7 @@
     transition: opacity 0.2s;
 }
 
-/* ── nickname edit ── */
+/* nickname edit */
 .nickname-edit {
     display: flex;
     flex-direction: column;
@@ -178,7 +178,7 @@
     margin: 0;
 }
 
-/* ── contact icons (view mode) ── */
+/* contact icons (view mode) */
 .contact-icons-row {
     display: flex;
     flex-direction: row;
@@ -232,7 +232,7 @@
     text-decoration: underline;
 }
 
-/* ── contacts editor (edit mode) ── */
+/* contacts editor (edit mode) */
 .contacts-editor {
     display: flex;
     flex-direction: column;
@@ -270,7 +270,7 @@
     white-space: nowrap;
 }
 
-/* ── avatar modal ── */
+/* avatar modal */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -317,7 +317,7 @@
     flex-direction: row;
     gap: 10px;
 }
-/* ── github integration ── */
+/* github integration */
 .github-integration {
     display: flex;
     flex-direction: column;

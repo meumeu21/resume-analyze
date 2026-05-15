@@ -27,8 +27,6 @@ import Avatar from "../components/Avatar";
 import starIcon from "../images/icons/ai-star.svg";
 import Footer from "../components/Footer";
 
-// ── contacts config ───────────────────────────────────────────────────────────
-
 const CONTACT_LABEL: Record<string, string> = {
   github: 'GitHub',
   telegram: 'Telegram',
@@ -85,8 +83,6 @@ function contactsToState(contacts: ContactLink[]): ContactsState {
   return state;
 }
 
-// ── component ─────────────────────────────────────────────────────────────────
-
 function ProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { user, signOut, accessToken, isLoading } = useAuth();
@@ -103,7 +99,6 @@ function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [creatingProject, setCreatingProject] = useState(false);
 
-  // edit state
   const [nicknameInput, setNicknameInput] = useState('');
   const [nicknameError, setNicknameError] = useState('');
   const [contactsState, setContactsState] = useState<ContactsState>({
@@ -111,17 +106,13 @@ function ProfilePage() {
   });
   const [contactsErrors, setContactsErrors] = useState<ContactsErrors>({});
 
-  // avatar upload
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
-  // favorites for other user's projects
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
 
-  // ai classification
   const [classifying, setClassifying] = useState(false);
 
-  // github integration
   const [githubAccount, setGithubAccount] = useState<GithubAccountData | null>(null);
   const [githubAccountLoading, setGithubAccountLoading] = useState(false);
   const [githubAccountError, setGithubAccountError] = useState('');
@@ -129,7 +120,6 @@ function ProfilePage() {
   const [githubConnecting, setGithubConnecting] = useState(false);
   const [githubSyncing, setGithubSyncing] = useState(false);
 
-  // ── redirect guests from /users/me ─────────────────────────────────────────
   useEffect(() => {
     if (isOwn && !isLoading && !accessToken) {
       navigate('/login', { replace: true });
@@ -177,13 +167,11 @@ function ProfilePage() {
   const softSkillsText = profile?.softSkills?.length ? profile.softSkills.join(', ') : '';
 
 
-  // ── follow ─────────────────────────────────────────────────────────────────
   async function handleFollow() {
     if (!accessToken || !id || followLoading) return;
     setFollowLoading(true);
 
     if (following) {
-      // Optimistic: unfollow
       setFollowing(false);
       setOtherProfile((p) => p ? { ...p, followersCount: (p.followersCount ?? 1) - 1 } : p);
       setMyProfile((p) => p ? { ...p, followingCount: (p.followingCount ?? 1) - 1 } : p);
@@ -195,7 +183,6 @@ function ProfilePage() {
         setMyProfile((p) => p ? { ...p, followingCount: (p.followingCount ?? 0) + 1 } : p);
       }
     } else {
-      // Optimistic: follow
       setFollowing(true);
       setOtherProfile((p) => p ? { ...p, followersCount: (p.followersCount ?? 0) + 1 } : p);
       setMyProfile((p) => p ? { ...p, followingCount: (p.followingCount ?? 0) + 1 } : p);
@@ -211,7 +198,6 @@ function ProfilePage() {
     setFollowLoading(false);
   }
 
-  // ── edit mode ──────────────────────────────────────────────────────────────
   async function handleEdit() {
     if (!isEditing) {
       setNicknameInput(profile?.nickname ?? nickname);
@@ -228,7 +214,6 @@ function ProfilePage() {
   async function handleSaveAll() {
     if (!accessToken) return;
 
-    // validate all contacts before saving
     const errors: ContactsErrors = {};
     for (const type of FIXED_TYPES) {
       const err = validateUrl(type, contactsState[type]);
@@ -259,26 +244,23 @@ function ProfilePage() {
     }
   }
 
-  // ── create project ─────────────────────────────────────────────────────────
   async function handleCreateProject() {
     if (!accessToken) return;
     setCreatingProject(true);
     try {
       const newProject = await createProject(accessToken, 'Новый проект');
       navigate(`/projects/${newProject.id}`);
-    } catch { /* ignore */ } finally {
+    } catch {} finally {
       setCreatingProject(false);
     }
   }
 
-  // ── toggle favorite on other user's project ───────────────────────────────
   async function handleToggleFavorite(e: React.MouseEvent, projectId: string) {
     e.preventDefault();
     if (!accessToken) return;
     const isFav = favoritedIds.has(projectId);
 
     if (isFav) {
-      // Optimistic: remove
       setFavoritedIds((prev) => { const next = new Set(prev); next.delete(projectId); return next; });
       setMyProfile((p) => p ? { ...p, favoritesCount: Math.max(0, (p.favoritesCount ?? 1) - 1) } : p);
       try {
@@ -288,7 +270,6 @@ function ProfilePage() {
         setMyProfile((p) => p ? { ...p, favoritesCount: (p.favoritesCount ?? 0) + 1 } : p);
       }
     } else {
-      // Optimistic: add
       setFavoritedIds((prev) => new Set(prev).add(projectId));
       setMyProfile((p) => p ? { ...p, favoritesCount: (p.favoritesCount ?? 0) + 1 } : p);
       try {
@@ -300,7 +281,6 @@ function ProfilePage() {
     }
   }
 
-  // ── ai classification ─────────────────────────────────────────────────────
   async function handleClassify() {
     if (!accessToken) return;
     setClassifying(true);
@@ -316,12 +296,11 @@ function ProfilePage() {
       }
       const fresh = await getMyProfile(accessToken);
       setMyProfile(fresh);
-    } catch { /* ignore */ } finally {
+    } catch {} finally {
       setClassifying(false);
     }
   }
 
-  // ── bio / skills ───────────────────────────────────────────────────────────
   async function handleBioSave(value: string) {
     if (!accessToken) return;
     await patchMyProfile(accessToken, { bio: value });
@@ -341,7 +320,6 @@ function ProfilePage() {
     setMyProfile((prev) => prev ? { ...prev, hardSkills: skills } : prev);
   }
 
-  // ── contact field change ───────────────────────────────────────────────────
   function handleContactChange(type: typeof FIXED_TYPES[number], value: string) {
     setContactsState((prev) => ({ ...prev, [type]: value }));
     const err = validateUrl(type, value);
@@ -354,7 +332,6 @@ function ProfilePage() {
     }
   }
 
-  // ── avatar upload ─────────────────────────────────────────────────────────
   async function handleAvatarFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !accessToken) return;
@@ -362,24 +339,23 @@ function ProfilePage() {
     try {
       const { avatarUrl: newUrl } = await uploadAvatar(accessToken, file);
       setMyProfile((prev) => prev ? { ...prev, avatarUrl: newUrl } : prev);
-    } catch { /* ignore */ } finally {
+    } catch {} finally {
       setAvatarUploading(false);
       e.target.value = '';
     }
   }
 
-  async function handleAvatarDelete() {
-    if (!accessToken) return;
-    setAvatarUploading(true);
-    try {
-      await deleteAvatar(accessToken);
-      setMyProfile((prev) => prev ? { ...prev, avatarUrl: null } : prev);
-    } catch { /* ignore */ } finally {
-      setAvatarUploading(false);
-    }
-  }
+  // async function handleAvatarDelete() {
+  //   if (!accessToken) return;
+  //   setAvatarUploading(true);
+  //   try {
+  //     await deleteAvatar(accessToken);
+  //     setMyProfile((prev) => prev ? { ...prev, avatarUrl: null } : prev);
+  //   } catch {} finally {
+  //     setAvatarUploading(false);
+  //   }
+  // }
 
-  // ── github integration ─────────────────────────────────────────────────────
   async function handleGithubConnect() {
     if (!accessToken || !githubUsernameInput.trim()) return;
     setGithubConnecting(true);
@@ -420,8 +396,6 @@ function ProfilePage() {
       if (e instanceof Error) setGithubAccountError(e.message);
     }
   }
-
-  // ── icon contacts (non-other) for view mode ────────────────────────────────
   const iconContacts = contacts.filter((c) => c.type !== 'other');
   const otherContact = contacts.find((c) => c.type === 'other');
 
@@ -434,7 +408,6 @@ function ProfilePage() {
 
           <div className="profile-header">
 
-            {/* аватарка */}
             <div
               className={`profile-avatar${isOwn && isEditing ? ' profile-avatar--editable' : ''}`}
               onClick={isOwn && isEditing ? () => avatarFileRef.current?.click() : undefined}
@@ -530,7 +503,6 @@ function ProfilePage() {
                 </div>
               </div>
 
-              {/* контакты */}
               {isOwn && isEditing ? (
                 <div className="contacts-editor">
                   {FIXED_TYPES.map((type) => (
@@ -572,7 +544,6 @@ function ProfilePage() {
 
           </div>
 
-          {/* контент профиля */}
           <div className="profile-content">
             {isOwn ? (
               <>
@@ -615,7 +586,6 @@ function ProfilePage() {
                   onSave={handleHardSkillsSave}
                 />
 
-                {/* GitHub integration */}
                 <div className="github-integration">
                   <h2 className="github-integration__title text bold">GitHub-аккаунт</h2>
                   <p className="text github-integration__hint">

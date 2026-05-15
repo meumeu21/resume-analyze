@@ -16,7 +16,6 @@ export class PasswordResetToken {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  // храним только хеш — как пароль, сам токен отправляется на почту и нигде не хранится
   @Column({ name: 'token_hash', unique: true })
   tokenHash: string;
 

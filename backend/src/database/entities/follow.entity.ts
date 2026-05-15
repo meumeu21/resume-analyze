@@ -10,7 +10,6 @@ export class Follow {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // кто подписывается
   @Column({ name: 'follower_id' })
   followerId: string;
 
@@ -18,7 +17,6 @@ export class Follow {
   @JoinColumn({ name: 'follower_id' })
   follower: User;
 
-  // на кого подписываются
   @Column({ name: 'following_id' })
   followingId: string;
 

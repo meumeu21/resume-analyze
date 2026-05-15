@@ -16,7 +16,6 @@ export class GithubRepo {
   @JoinColumn({ name: 'github_account_id' })
   githubAccount: GithubAccount | null;
 
-  // числовой ID репозитория на стороне GitHub
   @Column({ name: 'github_repo_id', unique: true })
   githubRepoId: number;
 
@@ -42,11 +41,9 @@ export class GithubRepo {
   @Column({ name: 'is_fork', default: false })
   isFork: boolean;
 
-  // Первые ~500 символов README для AI анализа
   @Column({ name: 'readme_excerpt', type: 'text', nullable: true })
   readmeExcerpt: string | null;
 
-  // package.json / requirements.txt и т.д. — сырые данные для AI
   @Column({ name: 'key_files', type: 'jsonb', default: {} })
   keyFiles: Record<string, string>;
 

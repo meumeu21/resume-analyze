@@ -43,7 +43,6 @@ function Project() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // shared edit fields
   const [titleInput, setTitleInput] = useState('');
   const [descInput, setDescInput] = useState('');
   const [stackInput, setStackInput] = useState('');
@@ -51,11 +50,9 @@ function Project() {
   const [isPublicInput, setIsPublicInput] = useState(false);
   const [demoUrlInput, setDemoUrlInput] = useState('');
 
-  // manual-only edit fields
   const [startedAtInput, setStartedAtInput] = useState('');
   const [finishedAtInput, setFinishedAtInput] = useState('');
 
-  // github tab state
   const [repoUrlInput, setRepoUrlInput] = useState('');
   const [githubRepos, setGithubRepos] = useState<GithubRepoData[]>([]);
   const [githubReposLoading, setGithubReposLoading] = useState(false);
@@ -63,19 +60,16 @@ function Project() {
   const [githubFetchDone, setGithubFetchDone] = useState(false);
   const [selectedRepoId, setSelectedRepoId] = useState<string | null>(null);
 
-  // files
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [fileError, setFileError] = useState('');
 
   const [authorNickname, setAuthorNickname] = useState('');
 
-  // ai summary
   const [aiSummary, setAiSummary] = useState<AiReport | null>(null);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiError, setAiError] = useState('');
 
-  // favorite
   const [isFavorited, setIsFavorited] = useState(false);
   const [favCount, setFavCount] = useState(0);
   const [favLoading, setFavLoading] = useState(false);
@@ -121,7 +115,7 @@ function Project() {
         const updated = await getReport(accessToken, aiSummary.id);
         setAiSummary(updated);
         if (updated.status !== 'pending') clearInterval(interval);
-      } catch { /* ignore */ }
+      } catch {}
     }, 3000);
     return () => clearInterval(interval);
   }, [aiSummary?.id, aiSummary?.status, accessToken]);
@@ -145,7 +139,7 @@ function Project() {
     try {
       const updated = await toggleReportVisibility(accessToken, aiSummary.id);
       setAiSummary(updated);
-    } catch { /* ignore */ }
+    } catch {}
   }
 
   function fetchGithubRepos() {
@@ -375,9 +369,8 @@ function Project() {
 
       <div className="container page">
 
-        {/* top nav */}
         <div className="project-nav">
-          <Link to="/users/me" className="text link">Назад</Link>
+          <button onClick={() => navigate(-1)} className="text link" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Назад</button>
           {isOwn && (
             <div className="project-edit-buttons">
               {isEditing ? (
@@ -556,7 +549,6 @@ function Project() {
             {activeTab === 'github' && (
               <div className="project-edit-form">
 
-                {/* Repo selector */}
                 <div className="project-edit-field">
                   <label className="text bold">Репозиторий GitHub</label>
 
@@ -598,10 +590,8 @@ function Project() {
                   )}
                 </div>
 
-                {/* Editable fields — visible once a repo is selected or already linked */}
                 {(selectedRepoId || repoUrlInput) && (
                   <>
-                    {/* Show repo URL as read-only info */}
                     {repoUrlInput && (
                       <div className="project-edit-field">
                         <label className="text bold">Ссылка на репозиторий</label>
@@ -703,7 +693,6 @@ function Project() {
               </div>
             )}
 
-            {/* AI-описание в режиме редактирования */}
             <div className="project-ai-card">
               <div className="project-ai-card-title">
                 <img src={aiStar} alt="AI" className="project-ai-icon" />

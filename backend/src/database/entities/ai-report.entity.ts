@@ -6,10 +6,10 @@ import { User } from './user.entity';
 import { Project } from './project.entity';
 
 export enum ReportType {
-  ACTIVITY_FIELD = 'activity_field',   // сфера деятельности на основе проектов и стека
-  IMPROVEMENTS = 'improvements',       // что можно улучшить / какие технологии изучить
-  PROJECT_SUMMARY = 'project_summary', // резюме конкретного проекта
-  RESUME = 'resume',                   // полное резюме пользователя
+  ACTIVITY_FIELD = 'activity_field',
+  IMPROVEMENTS = 'improvements',
+  PROJECT_SUMMARY = 'project_summary',
+  RESUME = 'resume',
 }
 
 export enum ReportStatus {
@@ -50,11 +50,9 @@ export class AiReport {
   @Column({ type: 'text', nullable: true })
   recommendations: string | null;
 
-  // полный ответ от AI
   @Column({ name: 'raw_response', type: 'jsonb', nullable: true })
   rawResponse: Record<string, unknown> | null;
 
-  // виден ли отчёт другим пользователям на профиле
   @Column({ name: 'is_public', default: false })
   isPublic: boolean;
 

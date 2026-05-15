@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { AI_REPORTS_QUEUE, AiService } from './ai.service';
 
-@Processor(AI_REPORTS_QUEUE, { concurrency: 2 })
+@Processor(AI_REPORTS_QUEUE, { concurrency: 1, limiter: { max: 8, duration: 60_000 } })
 export class AiProcessor extends WorkerHost {
   private readonly logger = new Logger(AiProcessor.name);
 

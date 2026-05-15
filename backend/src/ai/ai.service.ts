@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import OpenAI from 'openai';
+import type { ChatCompletionCreateParamsNonStreaming, ChatCompletion } from 'openai/resources';
 import { Repository } from 'typeorm';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -87,6 +88,24 @@ export class AiService {
     });
   }
 
+  private async callAI(params: ChatCompletionCreateParamsNonStreaming): Promise<ChatCompletion> {
+    const delays = [10_000, 30_000, 60_000];
+    for (let attempt = 0; attempt <= delays.length; attempt++) {
+      try {
+        return await this.client.chat.completions.create(params);
+      } catch (err: any) {
+        const is429 = err?.status === 429 || err?.message?.includes('429');
+        if (is429 && attempt < delays.length) {
+          this.logger.warn(`Gemini 429, retry in ${delays[attempt] / 1000}s (attempt ${attempt + 1})`);
+          await new Promise(r => setTimeout(r, delays[attempt]));
+        } else {
+          throw err;
+        }
+      }
+    }
+    throw new Error('AI request failed after all retries');
+  }
+
   async generate(currentUser: User, dto: GenerateReportDto): Promise<AiReport> {
     const profile = await this.profileRepo.findOne({ where: { userId: currentUser.id } });
     if (!profile) throw new NotFoundException('Профиль не найден');
@@ -155,7 +174,7 @@ export class AiService {
 
     try {
       const prompt = this.buildPrompt(report.reportType, profile, project, githubRepo, allProjects);
-      const completion = await this.client.chat.completions.create({
+      const completion = await this.callAI({
         model: 'gemini-2.5-flash',
         max_tokens: 1500,
         messages: [
@@ -192,7 +211,7 @@ export class AiService {
 
     try {
       const prompt = this.buildResumePrompt(profile, publicProjects);
-      const completion = await this.client.chat.completions.create({
+      const completion = await this.callAI({
         model: 'gemini-2.5-flash',
         max_tokens: 2000,
         messages: [
@@ -222,7 +241,7 @@ export class AiService {
 
     try {
       const prompt = this.buildImprovementsPrompt(profile, allProjects);
-      const completion = await this.client.chat.completions.create({
+      const completion = await this.callAI({
         model: 'gemini-2.5-flash',
         max_tokens: 4096,
         messages: [
@@ -303,7 +322,7 @@ export class AiService {
     const safeProfile = profile ?? ({ hardSkills: [], softSkills: [], bio: null, activityField: null } as unknown as Profile);
     const prompt = this.buildPrompt(ReportType.PROJECT_SUMMARY, safeProfile, project, githubRepo, []);
 
-    const completion = await this.client.chat.completions.create({
+    const completion = await this.callAI({
       model: 'gemini-2.5-flash',
       max_tokens: 800,
       messages: [

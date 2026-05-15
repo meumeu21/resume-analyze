@@ -10,7 +10,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
       useFactory: (config: ConfigService): TypeOrmModuleOptions => ({
         type: 'postgres',
         url: config.get<string>('database.url'),
-        synchronize: config.get<string>('app.nodeEnv') !== 'production',
+        synchronize: true,
         logging: config.get<string>('app.nodeEnv') === 'development',
         autoLoadEntities: true,
         migrations: ['dist/database/migrations/*{.ts,.js}'],

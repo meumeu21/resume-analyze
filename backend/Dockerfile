@@ -29,11 +29,7 @@ RUN npm ci --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/templates ./templates
 
-RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nestjs \
-  && mkdir -p /app/uploads \
-  && chown -R nestjs:nodejs /app
-USER nestjs
+RUN mkdir -p /app/uploads
 
 EXPOSE 3000
 CMD ["node", "dist/main.js"]

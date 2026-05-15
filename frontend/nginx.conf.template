@@ -1,10 +1,13 @@
 server {
-    listen 80;
+    listen ${PORT};
     root /usr/share/nginx/html;
     index index.html;
 
+    resolver 8.8.8.8 valid=30s ipv6=off;
+    set $backend "${BACKEND_INTERNAL_URL}";
+
     location /api/ {
-        proxy_pass ${BACKEND_INTERNAL_URL}/api/;
+        proxy_pass $backend;
         proxy_set_header Host $proxy_host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -12,7 +15,7 @@ server {
     }
 
     location /uploads/ {
-        proxy_pass ${BACKEND_INTERNAL_URL}/uploads/;
+        proxy_pass $backend;
         proxy_set_header Host $proxy_host;
         proxy_ssl_server_name on;
     }

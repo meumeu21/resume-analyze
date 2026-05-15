@@ -15,4 +15,18 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    host: '0.0.0.0',
+    port: Number(process.env.PORT) || 4173,
+    proxy: {
+      '/api': {
+        target: process.env.API_TARGET ?? 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/uploads': {
+        target: process.env.API_TARGET ?? 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

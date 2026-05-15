@@ -45,7 +45,7 @@ function Subscriptors() {
                             key={u.userId}
                             username={u.nickname}
                             AIdescription={u.activityField ?? ''}
-                            linkToAvatar={u.avatarUrl ?? avatar}
+                            avatarUrl={u.avatarUrl ?? avatar}
                             linkToProfile={`/users/${u.userId}`}
                             numOfSubs={String(u.followersCount)}
                         />

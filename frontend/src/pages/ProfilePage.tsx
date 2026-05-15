@@ -12,7 +12,7 @@ import ProjectPreview from "../components/ProjectPreview";
 import { useAuth } from "../context/AuthContext";
 import {
   getMyProfile, getUserProfile, followUser, unfollowUser,
-  patchMyProfile, updateContacts, uploadAvatar, deleteAvatar,
+  patchMyProfile, updateContacts, uploadAvatar,
 } from "../api/users";
 import type { MyProfileResponse, UserProfileResponse, ContactType } from "../api/users";
 import { createProject, getFavoriteProjects, addFavorite, removeFavorite } from "../api/projects";

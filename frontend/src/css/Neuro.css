@@ -1,3 +1,7 @@
+.neuro-container {
+    flex: 1;
+}
+
 .neuro-banner {
     background-image: url(../images/neuro-banner.jpg);
     min-height: 450px;

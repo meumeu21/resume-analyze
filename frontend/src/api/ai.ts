@@ -36,8 +36,10 @@ export interface PagedResult<T> {
   limit: number;
 }
 
+import { apiFetch } from './client';
+
 async function request<T>(url: string, options: RequestInit): Promise<T> {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     ...options,
     headers: { 'Content-Type': 'application/json', ...options.headers },
   });
@@ -102,7 +104,7 @@ export function toggleReportVisibility(accessToken: string, reportId: string) {
 }
 
 export async function downloadResumeDocx(accessToken: string, reportId: string): Promise<void> {
-  const res = await fetch(`/api/ai/reports/${reportId}/download`, {
+  const res = await apiFetch(`/api/ai/reports/${reportId}/download`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) {

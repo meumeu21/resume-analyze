@@ -168,12 +168,12 @@ function Neuro() {
   const resumeReady = !!resumeReport;
 
   return (
-    <div>
+    <>
       <Header />
 
       <div className="neuro-banner" />
 
-      <div className="container">
+      <div className="container neuro-container">
         <div className="neuro-top-btns">
           <button
             className={`button text${activeTab === 'resume' ? ' neuro-tab--active' : ''}`}
@@ -306,7 +306,7 @@ function Neuro() {
       </div>
 
       <Footer />
-    </div>
+    </>
   );
 }
 

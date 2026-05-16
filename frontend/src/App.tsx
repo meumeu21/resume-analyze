@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
@@ -21,6 +22,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 
 function AppRoutes() {
+  const { user, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (isLoading || !user) return;
+    if (!sessionStorage.getItem('vpnAlertShown')) {
+      sessionStorage.setItem('vpnAlertShown', '1');
+      alert('Для работы AI необходимо включить VPN');
+    }
+  }, [user, isLoading]);
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />

@@ -17,8 +17,10 @@ export interface GithubAccountData {
   repos: GithubRepoData[];
 }
 
+import { apiFetch } from './client';
+
 async function githubRequest<T>(url: string, options: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
+  const res = await apiFetch(url, options);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { message?: string }).message ?? `HTTP ${res.status}`);

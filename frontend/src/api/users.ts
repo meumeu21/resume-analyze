@@ -78,8 +78,10 @@ export interface UserProfileResponse {
   publicProjects: ProjectSummary[];
 }
 
+import { apiFetch } from './client';
+
 async function request<T>(url: string, options: RequestInit): Promise<T> {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     ...options,
     headers: { 'Content-Type': 'application/json', ...options.headers },
   });
@@ -160,7 +162,7 @@ export function unfollowUser(userId: string, accessToken: string) {
 export async function uploadAvatar(accessToken: string, file: File): Promise<{ avatarUrl: string }> {
   const form = new FormData();
   form.append('avatar', file);
-  const res = await fetch('/api/users/me/avatar', {
+  const res = await apiFetch('/api/users/me/avatar', {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}` },
     body: form,
@@ -173,7 +175,7 @@ export async function uploadAvatar(accessToken: string, file: File): Promise<{ a
 }
 
 export async function deleteAvatar(accessToken: string): Promise<void> {
-  const res = await fetch('/api/users/me/avatar', {
+  const res = await apiFetch('/api/users/me/avatar', {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${accessToken}` },
   });

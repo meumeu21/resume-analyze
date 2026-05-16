@@ -97,7 +97,7 @@ p {
 }
 
 .button-light:hover{
-    transition: 1s;
+    transition: 0.5s;
 
     border: 1px solid #FAE2FF;
 }
@@ -137,6 +137,10 @@ p {
     font-size: 36px;
     font-weight: 600;
     margin: 0 0 20px 0;
+}
+
+.no-data-text {
+    margin-top: 20px;
 }
 
 .footer{

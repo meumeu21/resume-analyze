@@ -162,28 +162,30 @@ function Neuro() {
 
   const resumeText = isGeneratingResume
     ? 'Нейросеть составляет резюме...'
-    : (resumeReport?.summary ?? '');
+    : resumeGenError
+    ? resumeGenError
+    : (resumeReport?.summary ?? 'Здесь будет текст вашего резюме');
 
   const canDownload = !!resumeReport && resumeReport.status === 'done';
   const resumeReady = !!resumeReport;
 
   return (
-    <div>
+    <>
       <Header />
 
       <div className="neuro-banner" />
 
-      <div className="container">
+      <div className="container neuro-container">
         <div className="neuro-top-btns">
           <button
-            className={`button text${activeTab === 'resume' ? ' neuro-tab--active' : ''}`}
+            className={activeTab === 'resume' ? 'button text' : 'button-light text'}
             type="button"
             onClick={() => setActiveTab('resume')}
           >
             Резюме
           </button>
           <button
-            className={`button text${activeTab === 'recommendations' ? ' neuro-tab--active' : ''}`}
+            className={activeTab === 'recommendations' ? 'button text' : 'button-light text'}
             type="button"
             onClick={() => setActiveTab('recommendations')}
           >
@@ -275,8 +277,6 @@ function Neuro() {
 
         {activeTab === 'resume' && (
           <div>
-            <h2>Резюме</h2>
-            {resumeGenError && <p className="neuro-error text">{resumeGenError}</p>}
             {downloadError && <p className="neuro-error text">{downloadError}</p>}
             <div className="neuro-resume">
               <div className="neuro-resume__left">
@@ -306,7 +306,7 @@ function Neuro() {
       </div>
 
       <Footer />
-    </div>
+    </>
   );
 }
 

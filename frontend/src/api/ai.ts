@@ -36,12 +36,15 @@ export interface PagedResult<T> {
   limit: number;
 }
 
+import { apiFetch } from './client';
+
 async function request<T>(url: string, options: RequestInit): Promise<T> {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     ...options,
     headers: { 'Content-Type': 'application/json', ...options.headers },
   });
   if (!res.ok) {
+    if (res.status === 429) throw new Error('Нейросеть не доступна');
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { message?: string }).message ?? `HTTP ${res.status}`);
   }
@@ -102,10 +105,11 @@ export function toggleReportVisibility(accessToken: string, reportId: string) {
 }
 
 export async function downloadResumeDocx(accessToken: string, reportId: string): Promise<void> {
-  const res = await fetch(`/api/ai/reports/${reportId}/download`, {
+  const res = await apiFetch(`/api/ai/reports/${reportId}/download`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) {
+    if (res.status === 429) throw new Error('Нейросеть не доступна');
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { message?: string }).message ?? 'Ошибка скачивания');
   }

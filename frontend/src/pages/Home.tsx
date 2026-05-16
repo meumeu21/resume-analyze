@@ -16,6 +16,7 @@ import { getTopFollowedUsers, type TopFollowedUser } from "../api/users";
 function Home() {
     const [dailyProject, setDailyProject] = useState<DailyProjectResponse | null>(null);
     const [aiSummary, setAiSummary] = useState<AiReport | null>(null);
+    const [aiError, setAiError] = useState<string | null>(null);
     const [projectLoading, setProjectLoading] = useState(true);
     const [aiLoading, setAiLoading] = useState(false);
 
@@ -34,7 +35,10 @@ function Home() {
                             return ensurePublicProjectSummary(project.id);
                         })
                         .then(summary => setAiSummary(summary))
-                        .catch(() => {})
+                        .catch((e: unknown) => {
+                            const msg = e instanceof Error ? e.message : '';
+                            if (msg === 'Нейросеть не доступна') setAiError(msg);
+                        })
                         .finally(() => setAiLoading(false));
                 }
             })
@@ -107,7 +111,9 @@ function Home() {
                                 ) : aiSummary?.summary ? (
                                     <p className="daily-project__ai-text">{aiSummary.summary}</p>
                                 ) : (
-                                    <p className="daily-project__ai-text daily-project__ai-text--empty">Описание недоступно</p>
+                                    <p className="daily-project__ai-text daily-project__ai-text--empty">
+                                        {aiError ?? 'Описание недоступно'}
+                                    </p>
                                 )}
                             </div>
                         </div>

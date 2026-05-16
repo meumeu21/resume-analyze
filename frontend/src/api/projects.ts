@@ -76,8 +76,10 @@ export interface DailyProjectResponse {
   };
 }
 
+import { apiFetch } from './client';
+
 async function request<T>(url: string, options: RequestInit): Promise<T> {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     ...options,
     headers: { 'Content-Type': 'application/json', ...options.headers },
   });
@@ -115,7 +117,7 @@ export function updateProject(id: string, accessToken: string, data: UpdateProje
 export async function uploadProjectFile(id: string, accessToken: string, file: File) {
   const form = new FormData();
   form.append('file', file);
-  const res = await fetch(`/api/projects/${id}/files`, {
+  const res = await apiFetch(`/api/projects/${id}/files`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}` },
     body: form,

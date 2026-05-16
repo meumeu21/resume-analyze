@@ -36,9 +36,9 @@ function Subscriptors() {
                 <button onClick={() => navigate(-1)} className="text link" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Назад</button>
 
                 {loading ? (
-                    <p className="text">Загрузка...</p>
+                    <p className="text no-data-text">Загрузка...</p>
                 ) : followers.length === 0 ? (
-                    <p className="text">У вас пока нет подписчиков</p>
+                    <p className="text no-data-text">У вас пока нет подписчиков</p>
                 ) : (
                     followers.map((u) => (
                         <ProfilePreview

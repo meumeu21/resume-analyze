@@ -167,3 +167,29 @@
     font-weight: 600;
     margin: 0 0 24px 0;
 }
+
+/* пагинация */
+.developers-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    margin-top: 32px;
+    margin-bottom: 16px;
+}
+
+.developers-pagination .button {
+    border: 1px solid transparent;
+}
+
+.developers-pagination .button-light:disabled {
+    opacity: 0.35;
+    cursor: default;
+    pointer-events: none;
+}
+
+.developers-pagination__ellipsis {
+    padding: 0 4px;
+    font-size: 16px;
+    color: #aaa;
+}

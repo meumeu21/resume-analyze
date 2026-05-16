@@ -26,6 +26,8 @@ const ACTIVITY_FILTERS = [
   { label: 'Embedded-разработчик', value: 'Embedded-разработчик' },
 ];
 
+const PAGE_LIMIT = 10;
+
 function Developers() {
   const { accessToken } = useAuth();
   const [searchText, setSearchText] = useState('');
@@ -33,25 +35,44 @@ function Developers() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [users, setUsers] = useState<UserCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const totalPages = Math.ceil(total / PAGE_LIMIT);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchText, activityField]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setLoading(true);
       getUsers(
-        { search: searchText || undefined, activityField: activityField || undefined },
+        {
+          search: searchText || undefined,
+          activityField: activityField || undefined,
+          page,
+          limit: PAGE_LIMIT,
+        },
         accessToken,
       )
-        .then((res) => setUsers(res.data))
-        .catch(() => setUsers([]))
+        .then((res) => {
+          setUsers(res.data);
+          setTotal(res.total);
+        })
+        .catch(() => {
+          setUsers([]);
+          setTotal(0);
+        })
         .finally(() => setLoading(false));
     }, 300);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [searchText, activityField, accessToken]);
+  }, [searchText, activityField, page, accessToken]);
 
   return (
     <>
@@ -124,6 +145,47 @@ function Developers() {
                 numOfSubs={String(u.followersCount)}
               />
             ))}
+          </div>
+        )}
+
+        {!loading && totalPages > 1 && (
+          <div className="developers-pagination">
+            <button
+              className="button-light text"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              ←
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+              .reduce<(number | '…')[]>((acc, p, idx, arr) => {
+                if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push('…');
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((item, idx) =>
+                item === '…' ? (
+                  <span key={`ellipsis-${idx}`} className="developers-pagination__ellipsis">…</span>
+                ) : (
+                  <button
+                    key={item}
+                    className={page === item ? 'button text' : 'button-light text'}
+                    onClick={() => setPage(item as number)}
+                  >
+                    {item}
+                  </button>
+                )
+              )}
+
+            <button
+              className="button-light text"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+            >
+              →
+            </button>
           </div>
         )}
       </div>

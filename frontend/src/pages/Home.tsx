@@ -10,7 +10,7 @@ import "../css/Home.css";
 import aiStar from "../images/icons/ai-star.svg";
 
 import { getDailyProject, type DailyProjectResponse } from "../api/projects";
-import { ensurePublicProjectSummary, type AiReport } from "../api/ai";
+import { ensurePublicProjectSummary, getPublicProjectSummary, type AiReport } from "../api/ai";
 import { getTopFollowedUsers, type TopFollowedUser } from "../api/users";
 
 function Home() {
@@ -28,7 +28,11 @@ function Home() {
                 setDailyProject(project);
                 if (project) {
                     setAiLoading(true);
-                    ensurePublicProjectSummary(project.id)
+                    getPublicProjectSummary(project.id)
+                        .then(summary => {
+                            if (summary) return summary;
+                            return ensurePublicProjectSummary(project.id);
+                        })
                         .then(summary => setAiSummary(summary))
                         .catch(() => {})
                         .finally(() => setAiLoading(false));

@@ -73,6 +73,7 @@ interface ImprovementsData {
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private readonly client: OpenAI;
+  private readonly generatingProjects = new Set<string>();
 
   constructor(
     private readonly config: ConfigService,
@@ -304,7 +305,7 @@ export class AiService {
     return doc.getZip().generate({ type: 'nodebuffer' }) as Buffer;
   }
 
-  async ensurePublicProjectSummary(projectId: string): Promise<AiReport> {
+  async ensurePublicProjectSummary(projectId: string): Promise<AiReport | null> {
     const project = await this.projectRepo.findOne({ where: { id: projectId, isPublic: true } });
     if (!project) throw new NotFoundException('Проект не найден или не является публичным');
 
@@ -314,6 +315,9 @@ export class AiService {
     });
     if (existing) return existing;
 
+    if (this.generatingProjects.has(projectId)) return null;
+    this.generatingProjects.add(projectId);
+
     const profile = await this.profileRepo.findOne({ where: { userId: project.userId } });
     const githubRepo = project.githubRepoId
       ? await this.githubRepoRepo.findOne({ where: { id: project.githubRepoId } })
@@ -322,15 +326,27 @@ export class AiService {
     const safeProfile = profile ?? ({ hardSkills: [], softSkills: [], bio: null, activityField: null } as unknown as Profile);
     const prompt = this.buildPrompt(ReportType.PROJECT_SUMMARY, safeProfile, project, githubRepo, []);
 
-    const completion = await this.callAI({
-      model: 'gemini-2.5-flash',
-      max_tokens: 800,
-      messages: [
-        { role: 'system', content: this.systemPrompt() },
-        { role: 'user', content: prompt },
-      ],
-    });
+    let completion: Awaited<ReturnType<typeof this.callAI>>;
+    try {
+      completion = await this.callAI({
+        model: 'gemini-2.5-flash',
+        max_tokens: 800,
+        messages: [
+          { role: 'system', content: this.systemPrompt() },
+          { role: 'user', content: prompt },
+        ],
+      });
+    } catch (err: any) {
+      this.generatingProjects.delete(projectId);
+      const is429 = err?.status === 429 || err?.message?.includes('429');
+      if (is429) {
+        this.logger.warn(`ensurePublicProjectSummary: Gemini rate limited, skipping for project ${projectId}`);
+        return null;
+      }
+      throw err;
+    }
 
+    this.generatingProjects.delete(projectId);
     const text = completion.choices[0]?.message?.content ?? '';
 
     return this.reportRepo.save(

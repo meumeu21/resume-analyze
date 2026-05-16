@@ -44,6 +44,7 @@ async function request<T>(url: string, options: RequestInit): Promise<T> {
     headers: { 'Content-Type': 'application/json', ...options.headers },
   });
   if (!res.ok) {
+    if (res.status === 429) throw new Error('Нейросеть не доступна');
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { message?: string }).message ?? `HTTP ${res.status}`);
   }
@@ -108,6 +109,7 @@ export async function downloadResumeDocx(accessToken: string, reportId: string):
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) {
+    if (res.status === 429) throw new Error('Нейросеть не доступна');
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { message?: string }).message ?? 'Ошибка скачивания');
   }

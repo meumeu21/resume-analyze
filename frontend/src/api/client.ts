@@ -20,7 +20,8 @@ async function doRefresh(): Promise<string | null> {
 
   const res = await fetch('/api/auth/refresh', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${refreshToken}` },
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refreshToken }),
   });
 
   if (!res.ok) {

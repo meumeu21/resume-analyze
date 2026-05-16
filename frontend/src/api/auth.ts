@@ -67,7 +67,7 @@ export function fetchMe(accessToken: string) {
 export function refreshTokens(refreshToken: string) {
   return request<AuthTokens>('/api/auth/refresh', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${refreshToken}` },
+    body: JSON.stringify({ refreshToken }),
   });
 }
 

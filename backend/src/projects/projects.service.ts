@@ -131,20 +131,19 @@ export class ProjectsService {
   }
 
   async getDailyProject() {
-    const count = await this.projectRepo.count({ where: { isPublic: true } });
-    if (count === 0) return null;
+    const result = await this.projectRepo
+      .createQueryBuilder('project')
+      .leftJoinAndSelect('project.user', 'user')
+      .leftJoinAndSelect('user.profile', 'profile')
+      .leftJoin('favorites', 'fav', 'fav.project_id = project.id')
+      .where('project.is_public = true')
+      .groupBy('project.id, user.id, profile.id')
+      .orderBy('COUNT(fav.id)', 'DESC')
+      .addOrderBy('project.created_at', 'ASC')
+      .limit(1)
+      .getOne();
 
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const offset = parseInt(today, 10) % count;
-
-    const [project] = await this.projectRepo.find({
-      where: { isPublic: true },
-      relations: ['user', 'user.profile'],
-      order: { createdAt: 'ASC' },
-      skip: offset,
-      take: 1,
-    });
-    return project ?? null;
+    return result ?? null;
   }
 
   async getMyFavorites(userId: string) {

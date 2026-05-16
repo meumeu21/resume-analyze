@@ -110,7 +110,15 @@ function Project() {
 
   useEffect(() => {
     if (!aiSummary || aiSummary.status !== 'pending' || !accessToken) return;
+    let pollCount = 0;
     const interval = setInterval(async () => {
+      pollCount += 1;
+      if (pollCount > 40) {
+        clearInterval(interval);
+        setAiSummary(null);
+        setAiError('Генерация не завершилась. Попробуйте ещё раз.');
+        return;
+      }
       try {
         const updated = await getReport(accessToken, aiSummary.id);
         setAiSummary(updated);

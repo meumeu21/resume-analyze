@@ -112,6 +112,7 @@ function ProfilePage() {
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
 
   const [classifying, setClassifying] = useState(false);
+  const [classifyError, setClassifyError] = useState('');
 
   const [githubAccount, setGithubAccount] = useState<GithubAccountData | null>(null);
   const [githubAccountLoading, setGithubAccountLoading] = useState(false);
@@ -284,19 +285,32 @@ function ProfilePage() {
   async function handleClassify() {
     if (!accessToken) return;
     setClassifying(true);
+    setClassifyError('');
     try {
       const report = await generateReport(accessToken, 'activity_field');
       let reportId = report.id;
       let status = report.status;
-      while (status === 'pending') {
+      let polls = 0;
+      while (status === 'pending' && polls < 40) {
         await new Promise((r) => setTimeout(r, 3000));
         const updated = await getReport(accessToken, reportId);
         status = updated.status;
         reportId = updated.id;
+        polls += 1;
+      }
+      if (status === 'pending') {
+        setClassifyError('Определение класса не завершилось. Попробуйте ещё раз.');
+        return;
+      }
+      if (status === 'error') {
+        setClassifyError('Не удалось определить класс. Попробуйте ещё раз.');
+        return;
       }
       const fresh = await getMyProfile(accessToken);
       setMyProfile(fresh);
-    } catch {} finally {
+    } catch {
+      setClassifyError('Ошибка при определении класса.');
+    } finally {
       setClassifying(false);
     }
   }
@@ -451,13 +465,16 @@ function ProfilePage() {
                   </div>
                 )}
                 {isOwn && isEditing && (
-                  <button
-                    className="button-light text"
-                    onClick={handleClassify}
-                    disabled={classifying}
-                  >
-                    {classifying ? 'Анализ...' : profile?.activityField ? 'Переопределить' : 'Определить класс'}
-                  </button>
+                  <>
+                    <button
+                      className="button-light text"
+                      onClick={handleClassify}
+                      disabled={classifying}
+                    >
+                      {classifying ? 'Анализ...' : profile?.activityField ? 'Переопределить' : 'Определить класс'}
+                    </button>
+                    {classifyError && <p className="error-text text">{classifyError}</p>}
+                  </>
                 )}
               </div>
 

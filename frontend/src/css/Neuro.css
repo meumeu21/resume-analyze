@@ -20,9 +20,8 @@
     margin-bottom: 32px;
 }
 
-.neuro-tab--active {
-    font-weight: 700;
-    text-decoration: underline;
+.neuro-top-btns .button {
+    border: 1px solid transparent;
 }
 
 .neuro-resume {

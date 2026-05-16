@@ -169,7 +169,12 @@ function ProfilePage() {
 
 
   async function handleFollow() {
-    if (!accessToken || !id || followLoading) return;
+    if (!accessToken) {
+      const go = window.confirm('Для подписки на пользователя нужно авторизоваться. Перейти на страницу авторизации?');
+      if (go) navigate('/login');
+      return;
+    }
+    if (!id || followLoading) return;
     setFollowLoading(true);
 
     if (following) {
@@ -349,6 +354,11 @@ function ProfilePage() {
   async function handleAvatarFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !accessToken) return;
+    if (file.size > 1 * 1024 * 1024) {
+      alert('Размер аватарки не должен превышать 1 МБ');
+      e.target.value = '';
+      return;
+    }
     setAvatarUploading(true);
     try {
       const { avatarUrl: newUrl } = await uploadAvatar(accessToken, file);
@@ -507,13 +517,17 @@ function ProfilePage() {
                       <button className="button text fc" onClick={handleEdit}>
                         {isEditing ? 'Сохранить' : 'Редактировать'}
                       </button>
-                      <button className="button-light text fc" onClick={signOut}>Выйти</button>
+                      {isEditing ? (
+                        <button className="button-light text fc" onClick={() => setIsEditing(false)}>Назад</button>
+                      ) : (
+                        <button className="button-light text fc" onClick={signOut}>Выйти</button>
+                      )}
                     </>
                   ) : (
                     <button
                       className={following ? 'button-light text fc' : 'button text fc'}
                       onClick={handleFollow}
-                      disabled={followLoading || !accessToken}
+                      disabled={followLoading}
                     >
                       {following ? 'Отписаться' : 'Подписаться'}
                     </button>

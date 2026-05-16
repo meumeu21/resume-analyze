@@ -292,6 +292,11 @@ function Project() {
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !id || !accessToken) return;
+    if (file.size > 1 * 1024 * 1024) {
+      setFileError('Размер файла не должен превышать 1 МБ');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
     setUploading(true);
     setFileError('');
     try {

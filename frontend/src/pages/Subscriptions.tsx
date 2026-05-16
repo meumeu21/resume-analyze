@@ -35,9 +35,9 @@ function Subscriptions() {
                 <button onClick={() => navigate(-1)} className="text link" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>Назад</button>
 
                 {loading ? (
-                    <p className="text">Загрузка...</p>
+                    <p className="text no-data-text">Загрузка...</p>
                 ) : following.length === 0 ? (
-                    <p className="text">Вы ни на кого не подписаны</p>
+                    <p className="text no-data-text">Вы ни на кого не подписаны</p>
                 ) : (
                     following.map((u) => (
                         <ProfilePreview

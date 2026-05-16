@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { fetchMe, logout as apiLogout } from '../api/auth';
+import { fetchMe, logout as apiLogout, refreshTokens } from '../api/auth';
 import type { MeResponse } from '../api/auth';
 
 interface AuthContextValue {
@@ -31,7 +31,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     fetchMe(accessToken)
       .then(setUser)
-      .catch(() => {
+      .catch(async () => {
+        if (refreshToken) {
+          try {
+            const tokens = await refreshTokens(refreshToken);
+            localStorage.setItem('accessToken', tokens.accessToken);
+            localStorage.setItem('refreshToken', tokens.refreshToken);
+            setAccessToken(tokens.accessToken);
+            setRefreshToken(tokens.refreshToken);
+            const me = await fetchMe(tokens.accessToken);
+            setUser(me);
+            return;
+          } catch {}
+        }
         setUser(null);
         setAccessToken(null);
         setRefreshToken(null);

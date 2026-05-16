@@ -25,6 +25,8 @@ function Neuro() {
   const [isGeneratingResume, setIsGeneratingResume] = useState(false);
   const [isGeneratingRec, setIsGeneratingRec] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [resumeGenError, setResumeGenError] = useState<string | null>(null);
+  const [recGenError, setRecGenError] = useState<string | null>(null);
 
   const resumePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -55,11 +57,18 @@ function Neuro() {
 
       if (latestResume?.status === 'pending') {
         setIsGeneratingResume(true);
+        setResumeGenError(null);
         startPolling(latestResume.id, 'resume');
+      } else if (latestResume?.status === 'error') {
+        setResumeGenError(latestResume.errorMessage ?? 'Генерация резюме завершилась с ошибкой');
       }
+
       if (latestRec?.status === 'pending') {
         setIsGeneratingRec(true);
+        setRecGenError(null);
         startPolling(latestRec.id, 'recommendations');
+      } else if (latestRec?.status === 'error') {
+        setRecGenError(latestRec.errorMessage ?? 'Генерация рекомендаций завершилась с ошибкой');
       }
     } catch {}
   }
@@ -68,8 +77,26 @@ function Neuro() {
     const ref = type === 'resume' ? resumePollRef : recPollRef;
     if (ref.current) clearInterval(ref.current);
 
+    const MAX_POLLS = 40;
+    let pollCount = 0;
+
     ref.current = setInterval(async () => {
       if (!accessToken) return;
+
+      pollCount += 1;
+      if (pollCount > MAX_POLLS) {
+        clearInterval(ref.current!);
+        ref.current = null;
+        if (type === 'resume') {
+          setIsGeneratingResume(false);
+          setResumeGenError('Генерация не завершилась. Попробуйте ещё раз.');
+        } else {
+          setIsGeneratingRec(false);
+          setRecGenError('Генерация не завершилась. Попробуйте ещё раз.');
+        }
+        return;
+      }
+
       try {
         const report = await getReport(accessToken, reportId);
         if (report.status !== 'pending') {
@@ -78,9 +105,15 @@ function Neuro() {
           if (type === 'resume') {
             setResumeReport(report);
             setIsGeneratingResume(false);
+            if (report.status === 'error') {
+              setResumeGenError(report.errorMessage ?? 'Ошибка генерации резюме');
+            }
           } else {
             setRecommendReport(report);
             setIsGeneratingRec(false);
+            if (report.status === 'error') {
+              setRecGenError(report.errorMessage ?? 'Ошибка генерации рекомендаций');
+            }
           }
         }
       } catch {}
@@ -90,13 +123,14 @@ function Neuro() {
   async function handleGenerateResume() {
     if (!accessToken || isGeneratingResume) return;
     setIsGeneratingResume(true);
+    setResumeGenError(null);
     setDownloadError(null);
     try {
       const report = await generateReport(accessToken, 'resume');
       setResumeReport(report);
       startPolling(report.id, 'resume');
     } catch (e) {
-      setDownloadError(e instanceof Error ? e.message : 'Ошибка генерации');
+      setResumeGenError(e instanceof Error ? e.message : 'Ошибка генерации резюме');
       setIsGeneratingResume(false);
     }
   }
@@ -104,13 +138,14 @@ function Neuro() {
   async function handleGenerateRecommendations() {
     if (!accessToken || isGeneratingRec) return;
     setIsGeneratingRec(true);
+    setRecGenError(null);
     setDownloadError(null);
     try {
       const report = await generateReport(accessToken, 'improvements');
       setRecommendReport(report);
       startPolling(report.id, 'recommendations');
     } catch (e) {
-      setDownloadError(e instanceof Error ? e.message : 'Ошибка генерации');
+      setRecGenError(e instanceof Error ? e.message : 'Ошибка генерации рекомендаций');
       setIsGeneratingRec(false);
     }
   }
@@ -127,9 +162,7 @@ function Neuro() {
 
   const resumeText = isGeneratingResume
     ? 'Нейросеть составляет резюме...'
-    : (resumeReport?.status === 'error'
-      ? `Ошибка: ${resumeReport.errorMessage}`
-      : (resumeReport?.summary ?? ''));
+    : (resumeReport?.summary ?? '');
 
   const canDownload = !!resumeReport && resumeReport.status === 'done';
   const resumeReady = !!resumeReport;
@@ -185,8 +218,8 @@ function Neuro() {
               <p className="text neuro-rec-loading">Нейросеть анализирует ваши данные...</p>
             )}
 
-            {!isGeneratingRec && recommendReport?.status === 'error' && (
-              <p className="text neuro-error">Ошибка: {recommendReport.errorMessage}</p>
+            {!isGeneratingRec && recGenError && (
+              <p className="text neuro-error">{recGenError}</p>
             )}
 
             {!isGeneratingRec && recommendReport?.status === 'done' && (() => {
@@ -243,6 +276,7 @@ function Neuro() {
         {activeTab === 'resume' && (
           <div>
             <h2>Резюме</h2>
+            {resumeGenError && <p className="neuro-error text">{resumeGenError}</p>}
             {downloadError && <p className="neuro-error text">{downloadError}</p>}
             <div className="neuro-resume">
               <div className="neuro-resume__left">

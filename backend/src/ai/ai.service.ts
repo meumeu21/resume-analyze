@@ -90,21 +90,15 @@ export class AiService {
   }
 
   private async callAI(params: ChatCompletionCreateParamsNonStreaming): Promise<ChatCompletion> {
-    const delays = [10_000, 30_000, 60_000];
-    for (let attempt = 0; attempt <= delays.length; attempt++) {
-      try {
-        return await this.client.chat.completions.create(params);
-      } catch (err: any) {
-        const is429 = err?.status === 429 || err?.message?.includes('429');
-        if (is429 && attempt < delays.length) {
-          this.logger.warn(`Gemini 429, retry in ${delays[attempt] / 1000}s (attempt ${attempt + 1})`);
-          await new Promise(r => setTimeout(r, delays[attempt]));
-        } else {
-          throw err;
-        }
-      }
+    const start = Date.now();
+    try {
+      const result = await this.client.chat.completions.create(params);
+      this.logger.log(`Gemini OK (${Date.now() - start}ms)`);
+      return result;
+    } catch (err: any) {
+      this.logger.error(`Gemini failed (${Date.now() - start}ms): ${err?.message}`);
+      throw err;
     }
-    throw new Error('AI request failed after all retries');
   }
 
   async generate(currentUser: User, dto: GenerateReportDto): Promise<AiReport> {
@@ -338,11 +332,6 @@ export class AiService {
       });
     } catch (err: any) {
       this.generatingProjects.delete(projectId);
-      const is429 = err?.status === 429 || err?.message?.includes('429');
-      if (is429) {
-        this.logger.warn(`ensurePublicProjectSummary: Gemini rate limited, skipping for project ${projectId}`);
-        return null;
-      }
       throw err;
     }
 

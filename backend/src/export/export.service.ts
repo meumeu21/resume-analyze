@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -9,9 +10,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const PDFDocument = require('pdfkit') as typeof import('pdfkit');
 import * as path from 'path';
+import PizZip from 'pizzip';
 import { Repository } from 'typeorm';
 import {
-  ContactLink, Profile, Project, User,
+  AiReport, ContactLink, Profile, Project, ReportStatus, ReportType, User,
 } from '../database/entities';
 
 type Doc = InstanceType<typeof PDFDocument>;
@@ -22,6 +24,7 @@ export class ExportService {
   private readonly fontBold = path.join(process.cwd(), 'fonts', 'DejaVuSans-Bold.ttf');
 
   constructor(
+    @InjectRepository(AiReport) private readonly reportRepo: Repository<AiReport>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Profile) private readonly profileRepo: Repository<Profile>,
     @InjectRepository(ContactLink) private readonly contactRepo: Repository<ContactLink>,
@@ -53,6 +56,229 @@ export class ExportService {
 
   async generateBlankTemplate(): Promise<Buffer> {
     return this.buildTemplatePdf();
+  }
+
+  async generateResumeDocx(reportId: string, userId: string): Promise<{ buffer: Buffer; nickname: string }> {
+    const report = await this.reportRepo.findOne({ where: { id: reportId, userId } });
+    if (!report) throw new NotFoundException('Отчёт не найден');
+    if (report.reportType !== ReportType.RESUME) throw new BadRequestException('Не является отчётом резюме');
+    if (report.status !== ReportStatus.DONE) throw new BadRequestException('Отчёт ещё не готов');
+    if (!report.rawResponse) throw new BadRequestException('Нет данных резюме');
+
+    const data = report.rawResponse as unknown as {
+      job_title: string;
+      about: string; projects: string;
+    };
+
+    const [profile, contactLinks] = await Promise.all([
+      this.profileRepo.findOne({ where: { userId } }),
+      this.contactRepo.find({ where: { userId } }),
+    ]);
+
+    const typeOrder = ['github', 'linkedin', 'telegram', 'website', 'other'];
+    const links = [...contactLinks]
+      .sort((a, b) => typeOrder.indexOf(a.type) - typeOrder.indexOf(b.type))
+      .slice(0, 5);
+
+    const buffer = this.buildResumeDocx({
+      firstName: profile?.nickname ?? '',
+      jobTitle: data.job_title || '',
+      about: data.about || '',
+      hardSkillNames: (profile?.hardSkills ?? []).map((s) => s.name),
+      softSkills: profile?.softSkills ?? [],
+      projects: data.projects || '',
+      contactLinks: links,
+    });
+
+    const nickname = (profile?.nickname ?? 'user').replace(/[^a-zA-Z0-9_-]/g, '-');
+    return { buffer, nickname };
+  }
+
+  private buildResumeDocx(params: {
+    firstName: string;
+    jobTitle: string;
+    about: string;
+    hardSkillNames: string[];
+    softSkills: string[];
+    projects: string;
+    contactLinks: ContactLink[];
+  }): Buffer {
+    const { firstName, jobTitle, about, hardSkillNames, softSkills, projects, contactLinks } = params;
+
+    const xmlEsc = (s: string) =>
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    const rpr = (opts: { bold?: boolean; size?: number; color?: string }) => {
+      const { bold = false, size = 22, color = '333333' } = opts;
+      return (
+        `<w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"/>` +
+        (bold ? '<w:b/>' : '') +
+        `<w:color w:val="${color}"/>` +
+        `<w:sz w:val="${size}"/><w:szCs w:val="${size}"/>`
+      );
+    };
+
+    const para = (content: string, pprExtra = '') =>
+      `<w:p><w:pPr>${pprExtra}</w:pPr>${content}</w:p>`;
+
+    const textRun = (text: string, opts: { bold?: boolean; size?: number; color?: string } = {}) =>
+      `<w:r><w:rPr>${rpr(opts)}</w:rPr><w:t xml:space="preserve">${xmlEsc(text)}</w:t></w:r>`;
+
+    const centeredPara = (content: string) =>
+      para(content, '<w:jc w:val="center"/><w:spacing w:after="80"/>');
+
+    const sectionHeader = (title: string) =>
+      para(textRun(title, { bold: true, size: 26, color: '2C7BE5' }),
+        '<w:spacing w:before="240" w:after="80"/>' +
+        '<w:pBdr><w:bottom w:val="single" w:sz="4" w:space="1" w:color="DDDDDD"/></w:pBdr>');
+
+    const hyperlinkPara = (rId: string, url: string) =>
+      `<w:p><w:pPr><w:spacing w:before="0" w:after="60"/></w:pPr>` +
+      `<w:hyperlink r:id="${rId}" w:history="1">` +
+      `<w:r><w:rPr>${rpr({ size: 22, color: '0563C1' })}<w:u w:val="single"/></w:rPr>` +
+      `<w:t xml:space="preserve">${xmlEsc(url)}</w:t></w:r></w:hyperlink></w:p>`;
+
+    const multiLinePara = (text: string, opts: Parameters<typeof textRun>[1] = {}) =>
+      text.split('\n').map((line) => para(textRun(line, opts))).join('');
+
+    const parts: string[] = [];
+
+    // Name
+    parts.push(centeredPara(textRun(firstName || 'user', { bold: true, size: 52, color: '222222' })));
+
+    // Job title
+    if (jobTitle) {
+      parts.push(centeredPara(textRun(jobTitle, { size: 28, color: '2C7BE5' })));
+    }
+
+    // КОНТАКТЫ
+    if (contactLinks.length) {
+      parts.push(sectionHeader('КОНТАКТЫ'));
+      contactLinks.forEach((link, i) => {
+        parts.push(hyperlinkPara(`rId${10 + i}`, link.url));
+      });
+    }
+
+    // О СЕБЕ
+    if (about) {
+      parts.push(sectionHeader('О СЕБЕ'));
+      parts.push(multiLinePara(about));
+    }
+
+    // ИНСТРУМЕНТЫ
+    if (hardSkillNames.length) {
+      parts.push(sectionHeader('ИНСТРУМЕНТЫ'));
+      parts.push(para(textRun(hardSkillNames.join(', '))));
+    }
+
+    // SOFT-SKILLS
+    if (softSkills.length) {
+      parts.push(sectionHeader('SOFT-SKILLS'));
+      parts.push(para(textRun(softSkills.join(', '))));
+    }
+
+    // ПРОЕКТЫ
+    if (projects) {
+      parts.push(sectionHeader('ПРОЕКТЫ'));
+      parts.push(multiLinePara(projects));
+    }
+
+    const hyperlinkRels = contactLinks.map((link, i) =>
+      `<Relationship Id="rId${10 + i}" ` +
+      `Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" ` +
+      `Target="${xmlEsc(link.url)}" TargetMode="External"/>`,
+    ).join('');
+
+    const relsXml =
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+      hyperlinkRels +
+      `</Relationships>`;
+
+    const docXml =
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" ` +
+      `xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">` +
+      `<w:body>${parts.join('')}` +
+      `<w:sectPr>` +
+      `<w:pgSz w:w="11906" w:h="16838"/>` +
+      `<w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="709" w:footer="709" w:gutter="0"/>` +
+      `</w:sectPr></w:body></w:document>`;
+
+    const zip = new PizZip();
+
+    zip.file('[Content_Types].xml',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+      `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+      `<Default Extension="xml" ContentType="application/xml"/>` +
+      `<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>` +
+      `</Types>`,
+    );
+
+    zip.file('_rels/.rels',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+      `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>` +
+      `</Relationships>`,
+    );
+
+    zip.file('word/_rels/document.xml.rels', relsXml);
+    zip.file('word/document.xml', docXml);
+
+    return zip.generate({ type: 'nodebuffer' }) as Buffer;
+  }
+
+  async generateTextDocx(reportId: string, userId: string): Promise<{ buffer: Buffer; nickname: string }> {
+    const report = await this.reportRepo.findOne({ where: { id: reportId, userId } });
+    if (!report) throw new NotFoundException('Отчёт не найден');
+    if (report.reportType !== ReportType.RESUME) throw new BadRequestException('Не является отчётом резюме');
+    if (report.status !== ReportStatus.DONE) throw new BadRequestException('Отчёт ещё не готов');
+
+    const profile = await this.profileRepo.findOne({ where: { userId } });
+    const nickname = (profile?.nickname ?? 'user').replace(/[^a-zA-Z0-9_-]/g, '-');
+    return { buffer: this.createTextDocx(report.summary ?? ''), nickname };
+  }
+
+  private createTextDocx(text: string): Buffer {
+    const xmlEsc = (s: string) =>
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    const paragraphs = text.split('\n').map((line) =>
+      `<w:p><w:r><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri"/><w:sz w:val="22"/></w:rPr><w:t xml:space="preserve">${xmlEsc(line)}</w:t></w:r></w:p>`,
+    ).join('');
+
+    const zip = new PizZip();
+
+    zip.file('[Content_Types].xml',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
+      `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
+      `<Default Extension="xml" ContentType="application/xml"/>` +
+      `<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>` +
+      `</Types>`,
+    );
+
+    zip.file('_rels/.rels',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+      `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>` +
+      `</Relationships>`,
+    );
+
+    zip.file('word/_rels/document.xml.rels',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"/>`,
+    );
+
+    zip.file('word/document.xml',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
+      `<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">` +
+      `<w:body>${paragraphs}<w:sectPr/></w:body>` +
+      `</w:document>`,
+    );
+
+    return zip.generate({ type: 'nodebuffer' }) as Buffer;
   }
 
   private buildResumePdf(data: {

@@ -104,8 +104,26 @@ export function toggleReportVisibility(accessToken: string, reportId: string) {
   });
 }
 
+async function triggerBlobDownload(res: Response, fallbackName: string): Promise<void> {
+  const disposition = res.headers.get('Content-Disposition');
+  let filename = fallbackName;
+  if (disposition) {
+    const match = /filename="([^"]+)"/.exec(disposition);
+    if (match) filename = match[1];
+  }
+  const blob = await res.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(url);
+}
+
 export async function downloadResumeDocx(accessToken: string, reportId: string): Promise<void> {
-  const res = await apiFetch(`/api/ai/reports/${reportId}/download`, {
+  const res = await apiFetch(`/api/export/docx/${reportId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) {
@@ -113,13 +131,16 @@ export async function downloadResumeDocx(accessToken: string, reportId: string):
     const body = await res.json().catch(() => ({}));
     throw new Error((body as { message?: string }).message ?? 'Ошибка скачивания');
   }
-  const blob = await res.blob();
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'resume.docx';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  window.URL.revokeObjectURL(url);
+  await triggerBlobDownload(res, 'resume.docx');
+}
+
+export async function downloadTextDocx(accessToken: string, reportId: string): Promise<void> {
+  const res = await apiFetch(`/api/export/text/${reportId}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as { message?: string }).message ?? 'Ошибка скачивания');
+  }
+  await triggerBlobDownload(res, 'resume-text.docx');
 }

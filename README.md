@@ -1,3 +1,3 @@
 # CommIT
 
-![sovest-ne-muchaet](./sovest-ne-muchaet.gif)
+![til](./sovest-ne-muchayet.gif)

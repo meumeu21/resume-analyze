@@ -89,6 +89,36 @@ export class ExportController {
     res.end(buffer);
   }
 
+  @Get('docx/:reportId')
+  async downloadResumeDocx(
+    @Param('reportId') reportId: string,
+    @CurrentUser() user: User,
+    @Res() res: Response,
+  ) {
+    const { buffer, nickname } = await this.exportService.generateResumeDocx(reportId, user.id);
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': `attachment; filename="${nickname}-resume.docx"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
+  }
+
+  @Get('text/:reportId')
+  async downloadResumeText(
+    @Param('reportId') reportId: string,
+    @CurrentUser() user: User,
+    @Res() res: Response,
+  ) {
+    const { buffer, nickname } = await this.exportService.generateTextDocx(reportId, user.id);
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'Content-Disposition': `attachment; filename="${nickname}-resume-text.docx"`,
+      'Content-Length': buffer.length,
+    });
+    res.end(buffer);
+  }
+
   @Get('template')
   async downloadTemplate(@Res() res: Response) {
     const buffer = await this.exportService.generateBlankTemplate();

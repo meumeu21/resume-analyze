@@ -11,10 +11,6 @@ import { Queue } from 'bullmq';
 import OpenAI from 'openai';
 import type { ChatCompletionCreateParamsNonStreaming, ChatCompletion } from 'openai/resources';
 import { Repository } from 'typeorm';
-import * as fs from 'fs';
-import * as path from 'path';
-import PizZip from 'pizzip';
-import Docxtemplater from 'docxtemplater';
 
 import {
   AiReport, Profile, Project, ReportStatus, ReportType, User,
@@ -259,44 +255,6 @@ export class AiService {
 
     await this.reportRepo.save(report);
     this.logger.log(`Improvements report ${report.id} finished with status ${report.status}`);
-  }
-
-  async generateResumeDocx(reportId: string, userId: string): Promise<Buffer> {
-    const report = await this.reportRepo.findOne({ where: { id: reportId, userId } });
-    if (!report) throw new NotFoundException('Отчёт не найден');
-    if (report.reportType !== ReportType.RESUME) throw new BadRequestException('Не является отчётом резюме');
-    if (report.status !== ReportStatus.DONE) throw new BadRequestException('Отчёт ещё не готов');
-    if (!report.rawResponse) throw new BadRequestException('Нет данных резюме');
-
-    const data = report.rawResponse as unknown as ResumeData;
-
-    const templatePath = path.join(process.cwd(), 'templates', 'resume-template.docx');
-    const content = fs.readFileSync(templatePath);
-
-    const zip = new PizZip(content);
-
-    const docFile = zip.file('word/document.xml');
-    if (!docFile) throw new Error('Шаблон резюме повреждён: нет document.xml');
-    let docXml = docFile.asText();
-    docXml = docXml
-      .replace(/<w:t>N A M E<\/w:t>/g, '<w:t>{first_name}</w:t>')
-      .replace(/<w:t>S U R N A M E<\/w:t>/g, '<w:t>{last_name}</w:t>')
-      .replace(/<w:t>J O B   T I T L E<\/w:t>/g, '<w:t>{job_title}</w:t>');
-    zip.file('word/document.xml', docXml);
-
-    const doc = new Docxtemplater(zip, { linebreaks: true, paragraphLoop: true });
-
-    doc.render({
-      first_name: data.first_name || '',
-      last_name: data.last_name || '',
-      job_title: data.job_title || '',
-      about: data.about || '',
-      hard_skills: data.hard_skills || '',
-      soft_skills: data.soft_skills || '',
-      projects: data.projects || '',
-    });
-
-    return doc.getZip().generate({ type: 'nodebuffer' }) as Buffer;
   }
 
   async ensurePublicProjectSummary(projectId: string): Promise<AiReport | null> {

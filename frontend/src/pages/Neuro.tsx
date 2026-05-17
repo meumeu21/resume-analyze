@@ -8,6 +8,7 @@ import {
   getMyReports,
   getReport,
   downloadResumeDocx,
+  downloadTextDocx,
 } from '../api/ai';
 import type { AiReport, ImprovementsData } from '../api/ai';
 
@@ -160,6 +161,16 @@ function Neuro() {
     }
   }
 
+  async function handleDownloadText() {
+    if (!accessToken || !resumeReport || resumeReport.status !== 'done') return;
+    setDownloadError(null);
+    try {
+      await downloadTextDocx(accessToken, resumeReport.id);
+    } catch (e) {
+      setDownloadError(e instanceof Error ? e.message : 'Ошибка скачивания');
+    }
+  }
+
   const resumeText = isGeneratingResume
     ? 'Нейросеть составляет резюме...'
     : resumeGenError
@@ -298,6 +309,14 @@ function Neuro() {
                   disabled={!canDownload}
                 >
                   Скачать резюме
+                </button>
+                <button
+                  className="button-light text"
+                  type="button"
+                  onClick={handleDownloadText}
+                  disabled={!canDownload}
+                >
+                  Скачать текст ИИ
                 </button>
               </div>
             </div>

@@ -78,7 +78,7 @@ function Neuro() {
     const ref = type === 'resume' ? resumePollRef : recPollRef;
     if (ref.current) clearInterval(ref.current);
 
-    const MAX_POLLS = 40;
+    const MAX_POLLS = 70;
     let pollCount = 0;
 
     ref.current = setInterval(async () => {

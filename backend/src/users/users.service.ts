@@ -236,6 +236,27 @@ export class UsersService {
 
   // хелперы
 
+  async deleteCoordinates(currentUser: User): Promise<void> {
+    const profile = await this.profileRepo.findOne({ where: { userId: currentUser.id } });
+    if (!profile) throw new NotFoundException('Профиль не найден');
+    profile.coordinates = null;
+    await this.profileRepo.save(profile);
+  }
+
+  async deleteSkillMap(currentUser: User): Promise<void> {
+    const profile = await this.profileRepo.findOne({ where: { userId: currentUser.id } });
+    if (!profile) throw new NotFoundException('Профиль не найден');
+    profile.skillMap = null;
+    await this.profileRepo.save(profile);
+  }
+
+  async deleteNetworkGraph(currentUser: User): Promise<void> {
+    const profile = await this.profileRepo.findOne({ where: { userId: currentUser.id } });
+    if (!profile) throw new NotFoundException('Профиль не найден');
+    profile.networkGraph = null;
+    await this.profileRepo.save(profile);
+  }
+
   async syncHardSkillsFromProjects(currentUser: User) {
     const profile = await this.profileRepo.findOne({ where: { userId: currentUser.id } });
     if (!profile) throw new NotFoundException('Профиль не найден');
@@ -302,6 +323,8 @@ export class UsersService {
       softSkills: profile.softSkills,
       hardSkills: profile.hardSkills, // [{name, level}]
       coordinates: profile.coordinates,
+      skillMap: profile.skillMap,
+      networkGraph: profile.networkGraph,
       activityField: profile.activityField,
       isProfilePublic: profile.isProfilePublic,
       isFollowersPublic: profile.isFollowersPublic,

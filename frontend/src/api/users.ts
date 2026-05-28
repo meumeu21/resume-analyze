@@ -48,6 +48,12 @@ export interface MyProfileResponse {
   activityField: string | null;
   softSkills: string[];
   hardSkills: { name: string; level: number }[];
+  coordinates: { x: number; y: number } | null;
+  skillMap: { name: string; value: number }[] | null;
+  networkGraph: {
+    nodes: { id: string; label: string; type: 'technology' | 'domain'; weight: number }[];
+    edges: { source: string; target: string }[];
+  } | null;
   firstName: string | null;
   lastName: string | null;
   followersCount: number;
@@ -68,6 +74,12 @@ export interface UserProfileResponse {
   activityField: string | null;
   softSkills: string[];
   hardSkills: { name: string; level: number }[];
+  coordinates: { x: number; y: number } | null;
+  skillMap: { name: string; value: number }[] | null;
+  networkGraph: {
+    nodes: { id: string; label: string; type: 'technology' | 'domain'; weight: number }[];
+    edges: { source: string; target: string }[];
+  } | null;
   firstName: string | null;
   lastName: string | null;
   followersCount: number | null;
@@ -218,6 +230,27 @@ export function getMyFollowing(accessToken: string) {
 export function getTopFollowedUsers() {
   return request<TopFollowedUser[]>('/api/users/top-followed', {
     method: 'GET',
+  });
+}
+
+export function deleteCoordinates(accessToken: string): Promise<void> {
+  return request<void>('/api/users/me/coordinates', {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function deleteSkillMap(accessToken: string): Promise<void> {
+  return request<void>('/api/users/me/skill-map', {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export function deleteNetworkGraph(accessToken: string): Promise<void> {
+  return request<void>('/api/users/me/network-graph', {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
 }
 

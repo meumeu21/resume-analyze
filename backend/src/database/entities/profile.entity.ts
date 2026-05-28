@@ -45,6 +45,17 @@ export class Profile {
   @Column({ type: 'jsonb', nullable: true })
   coordinates: { x: number; y: number } | null = null;
 
+  // [{name: "Frontend", value: 7}, ...]  value: 0..10
+  @Column({ name: 'skill_map', type: 'jsonb', nullable: true })
+  skillMap: { name: string; value: number }[] | null = null;
+
+  // {nodes: [{id, label, type, weight}], edges: [{source, target}]}
+  @Column({ name: 'network_graph', type: 'jsonb', nullable: true })
+  networkGraph: {
+    nodes: { id: string; label: string; type: 'technology' | 'domain'; weight: number }[];
+    edges: { source: string; target: string }[];
+  } | null = null;
+
   @Column({ name: 'activity_field', type: 'varchar', nullable: true })
   activityField!: string | null;
 

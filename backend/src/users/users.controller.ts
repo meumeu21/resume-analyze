@@ -83,6 +83,27 @@ export class UsersController {
     return this.usersService.deleteAvatar(user);
   }
 
+  @Delete('me/coordinates')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteCoordinates(@CurrentUser() user: User) {
+    return this.usersService.deleteCoordinates(user);
+  }
+
+  @Delete('me/skill-map')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteSkillMap(@CurrentUser() user: User) {
+    return this.usersService.deleteSkillMap(user);
+  }
+
+  @Delete('me/network-graph')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteNetworkGraph(@CurrentUser() user: User) {
+    return this.usersService.deleteNetworkGraph(user);
+  }
+
   @Post('me/sync-skills')
   @UseGuards(JwtAuthGuard)
   syncSkills(@CurrentUser() user: User) {

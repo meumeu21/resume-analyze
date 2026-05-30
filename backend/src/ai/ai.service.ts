@@ -79,9 +79,13 @@ export class AiService {
     @InjectRepository(GithubRepo) private readonly githubRepoRepo: Repository<GithubRepo>,
     @InjectQueue(AI_REPORTS_QUEUE) private readonly aiQueue: Queue,
   ) {
+    // this.client = new OpenAI({
+    //   apiKey: this.config.get<string>('GEMINI_API_KEY'),
+    //   baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+    // });
     this.client = new OpenAI({
-      apiKey: this.config.get<string>('GEMINI_API_KEY'),
-      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+      apiKey: this.config.get<string>('MISTRAL_API_KEY'),
+      baseURL: 'https://api.mistral.ai/v1',
     });
   }
 
@@ -150,6 +154,21 @@ export class AiService {
       return;
     }
 
+    if (report.reportType === ReportType.COORDINATES) {
+      await this.processCoordinatesReport(report, profile);
+      return;
+    }
+
+    if (report.reportType === ReportType.SKILL_MAP) {
+      await this.processSkillMapReport(report, profile);
+      return;
+    }
+
+    if (report.reportType === ReportType.NETWORK_GRAPH) {
+      await this.processNetworkGraphReport(report, profile);
+      return;
+    }
+
     let project: Project | null = null;
     let githubRepo: GithubRepo | null = null;
     let allProjects: Project[] = [];
@@ -166,7 +185,7 @@ export class AiService {
     try {
       const prompt = this.buildPrompt(report.reportType, profile, project, githubRepo, allProjects);
       const completion = await this.callAI({
-        model: 'gemini-2.5-flash',
+        model: 'mistral-small-latest',
         max_tokens: 1500,
         messages: [
           { role: 'system', content: this.systemPrompt() },
@@ -203,7 +222,7 @@ export class AiService {
     try {
       const prompt = this.buildResumePrompt(profile, publicProjects);
       const completion = await this.callAI({
-        model: 'gemini-2.5-flash',
+        model: 'mistral-small-latest',
         max_tokens: 2000,
         messages: [
           { role: 'system', content: this.resumeSystemPrompt() },
@@ -233,7 +252,7 @@ export class AiService {
     try {
       const prompt = this.buildImprovementsPrompt(profile, allProjects);
       const completion = await this.callAI({
-        model: 'gemini-2.5-flash',
+        model: 'mistral-small-latest',
         max_tokens: 4096,
         messages: [
           { role: 'system', content: this.systemPrompt() },
@@ -255,6 +274,191 @@ export class AiService {
 
     await this.reportRepo.save(report);
     this.logger.log(`Improvements report ${report.id} finished with status ${report.status}`);
+  }
+
+  private async processCoordinatesReport(report: AiReport, profile: Profile): Promise<void> {
+    const allProjects = await this.projectRepo.find({ where: { userId: report.userId } });
+
+    try {
+      const prompt = this.buildCoordinatesPrompt(profile, allProjects);
+      const completion = await this.callAI({
+        model: 'mistral-small-latest',
+        max_tokens: 1500,
+        messages: [
+          { role: 'system', content: 'Ты аналитик IT-специализаций. Отвечай ТОЛЬКО JSON-объектом без markdown и пояснений.' },
+          { role: 'user', content: prompt },
+        ],
+      });
+
+      const rawText = completion.choices[0]?.message?.content ?? '';
+      const coords: { x: number; y: number } = JSON.parse(this.extractJson(rawText));
+
+      const x = Math.max(-5, Math.min(5, Number(coords.x)));
+      const y = Math.max(-5, Math.min(5, Number(coords.y)));
+
+      profile.coordinates = { x, y };
+      await this.profileRepo.save(profile);
+
+      report.status = ReportStatus.DONE;
+      report.rawResponse = { x, y } as unknown as Record<string, unknown>;
+      report.summary = `x: ${x}, y: ${y}`;
+    } catch (err) {
+      report.status = ReportStatus.ERROR;
+      report.errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
+      this.logger.error(`Coordinates report ${report.id} failed: ${report.errorMessage}`);
+    }
+
+    await this.reportRepo.save(report);
+    this.logger.log(`Coordinates report ${report.id} finished with status ${report.status}`);
+  }
+
+  private async processSkillMapReport(report: AiReport, profile: Profile): Promise<void> {
+    const skills = profile.hardSkills.map((s) => ({
+      name: s.name,
+      value: s.level,
+    }));
+
+    profile.skillMap = skills;
+    await this.profileRepo.save(profile);
+
+    report.status = ReportStatus.DONE;
+    report.rawResponse = { skills } as unknown as Record<string, unknown>;
+    report.summary = skills.map((s) => `${s.name}: ${s.value}`).join(', ');
+    await this.reportRepo.save(report);
+    this.logger.log(`SkillMap report ${report.id} finished with status ${report.status}`);
+  }
+
+
+  private async processNetworkGraphReport(report: AiReport, profile: Profile): Promise<void> {
+    const allProjects = await this.projectRepo.find({ where: { userId: report.userId } });
+
+    if (!allProjects.length) {
+      report.status = ReportStatus.ERROR;
+      report.errorMessage = 'Нет проектов для построения графа';
+      await this.reportRepo.save(report);
+      return;
+    }
+
+    const githubRepoIds = allProjects.map((p) => p.githubRepoId).filter((id): id is string => !!id);
+    const githubRepos = githubRepoIds.length
+      ? await this.githubRepoRepo.find({ where: githubRepoIds.map((id) => ({ id })) })
+      : [];
+    const githubRepoMap = new Map(githubRepos.map((r) => [r.id, r]));
+
+    const projectsInfo = allProjects.map((p) => {
+      const repo = p.githubRepoId ? githubRepoMap.get(p.githubRepoId) : null;
+      const description = p.description ? p.description.slice(0, 150) : '';
+      const readme = repo?.readmeExcerpt ? repo.readmeExcerpt.slice(0, 200) : '';
+      const context = [description, readme].filter(Boolean).join(' ');
+      return `— ${p.title}${context ? `\n  ${context}` : ''}`;
+    }).join('\n\n');
+
+    try {
+      const completion = await this.callAI({
+        model: 'mistral-small-latest',
+        max_tokens: 4096,
+        messages: [
+          {
+            role: 'system',
+            content: 'Ты аналитик интересов IT-разработчика. Отвечай ТОЛЬКО валидным компактным JSON одной строкой без markdown и пояснений.',
+          },
+          { role: 'user', content: this.buildInterestGraphPrompt(projectsInfo) },
+        ],
+      });
+
+      const rawText = completion.choices[0]?.message?.content ?? '';
+      const parsed = JSON.parse(this.extractJson(rawText));
+
+      let resolvedData: { nodes: unknown; edges: unknown } = parsed;
+      if (!Array.isArray(parsed?.nodes) && parsed && typeof parsed === 'object') {
+        for (const val of Object.values(parsed)) {
+          if (val && typeof val === 'object' && Array.isArray((val as { nodes?: unknown }).nodes)) {
+            resolvedData = val as { nodes: unknown; edges: unknown };
+            break;
+          }
+        }
+      }
+      if (!Array.isArray(resolvedData?.nodes)) {
+        throw new Error('Неожиданная структура JSON от AI');
+      }
+
+      const data = resolvedData as {
+        nodes: { id: string; label: string; type: 'technology' | 'domain'; weight: number }[];
+        edges: { source: string; target: string }[];
+      };
+
+      const nodeIds = new Set(data.nodes.map((n) => n.id));
+      const nodes = data.nodes.map((n) => ({
+        id: String(n.id),
+        label: String(n.label),
+        type: n.type === 'domain' ? ('domain' as const) : ('technology' as const),
+        weight: Math.max(1, Math.min(5, Number(n.weight) || 1)),
+      }));
+      const edges = (Array.isArray(data.edges) ? data.edges : [])
+        .filter((e) => e && nodeIds.has(e.source) && nodeIds.has(e.target) && e.source !== e.target)
+        .map((e) => ({ source: String(e.source), target: String(e.target) }));
+
+      profile.networkGraph = { nodes, edges };
+      await this.profileRepo.save(profile);
+
+      report.status = ReportStatus.DONE;
+      report.rawResponse = { nodes, edges } as unknown as Record<string, unknown>;
+      report.summary = `${nodes.length} узлов, ${edges.length} связей`;
+    } catch (err) {
+      report.status = ReportStatus.ERROR;
+      report.errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
+      this.logger.error(`NetworkGraph report ${report.id} failed: ${report.errorMessage}`);
+    }
+
+    await this.reportRepo.save(report);
+    this.logger.log(`NetworkGraph report ${report.id} finished with status ${report.status}`);
+  }
+
+  private buildInterestGraphPrompt(projectsInfo: string): string {
+    return `Проанализируй проекты разработчика и построй граф его интересов.
+
+=== ПРОЕКТЫ (название + описание/README) ===
+${projectsInfo}
+
+=== ПРАВИЛА ===
+1. ОБЛАСТИ (type "domain", weight 3-5): широкие тематические области из проектов (например: "Веб-разработка", "Автоматизация", "Геймдев", "Data Science"). Только реально присутствующие.
+2. ИНТЕРЕСЫ (type "technology", weight 1-4): конкретная тема каждого проекта, выведенная из его названия и описания. Одно короткое существительное или словосочетание (2-3 слова).
+3. РЁБРА: интерес → область к которой относится; область ↔ область если тематически связаны.
+4. ОГРАНИЧЕНИЯ: 8-16 узлов, нет изолированных узлов, id — строчный латинский без пробелов.
+
+Верни ТОЛЬКО компактный JSON одной строкой:
+{"nodes":[{"id":"web","label":"Веб-разработка","type":"domain","weight":5},{"id":"resume_analyzer","label":"Анализ резюме","type":"technology","weight":3}],"edges":[{"source":"resume_analyzer","target":"web"}]}`;
+  }
+
+
+  private buildCoordinatesPrompt(profile: Profile, allProjects: Project[]): string {
+    const skillNames = profile.hardSkills.map((s) => s.name);
+    const projectsInfo = allProjects.length
+      ? allProjects.map((p) => [
+          `— ${p.title}`,
+          p.description ? `  Описание: ${p.description}` : null,
+          p.stack.length ? `  Стек: ${p.stack.join(', ')}` : null,
+          p.role ? `  Роль: ${p.role}` : null,
+        ].filter(Boolean).join('\n')).join('\n\n')
+      : 'Проекты не указаны';
+
+    return `Определи координаты разработчика на 2D-плоскости по его проектам и навыкам.
+
+Ось X: от -5 (низкоуровневое программирование: embedded, ядро ОС, драйверы, asm, C)
+        до +5 (высокоуровневое: веб, мобайл, бизнес-логика, SaaS, скрипты)
+
+Ось Y: от -5 (продуктовый подход: UX, фичи для пользователя, бизнес-результат, метрики)
+        до +5 (инженерный подход: архитектура, надёжность, производительность, инфраструктура)
+
+=== ПРОЕКТЫ ===
+${projectsInfo}
+
+=== НАВЫКИ ===
+${skillNames.length ? skillNames.join(', ') : 'не указаны'}
+${profile.activityField ? `Специализация: ${profile.activityField}` : ''}
+
+Верни ТОЛЬКО JSON с двумя числами (дробные допустимы):
+{"x": 0.0, "y": 0.0}`;
   }
 
   async ensurePublicProjectSummary(projectId: string): Promise<AiReport | null> {
@@ -281,7 +485,7 @@ export class AiService {
     let completion: Awaited<ReturnType<typeof this.callAI>>;
     try {
       completion = await this.callAI({
-        model: 'gemini-2.5-flash',
+        model: 'mistral-small-latest',
         max_tokens: 800,
         messages: [
           { role: 'system', content: this.systemPrompt() },
@@ -544,10 +748,44 @@ ${categoriesList}
 
   private extractJson(text: string): string {
     const stripped = text.replace(/```(?:json)?/g, '').replace(/```/g, '');
-    const start = stripped.indexOf('{');
-    const end = stripped.lastIndexOf('}');
-    if (start === -1 || end === -1 || end <= start) throw new Error('AI вернул некорректный JSON');
-    return stripped.slice(start, end + 1);
+
+    // Scan forward and collect ALL top-level balanced {..} blocks.
+    // Return the LONGEST one — the main JSON response is always larger than
+    // any individual thinking snippet or trailing node example.
+    let best = '';
+    let i = 0;
+    while (i < stripped.length) {
+      if (stripped[i] !== '{') { i++; continue; }
+      let depth = 0;
+      let end = -1;
+      for (let j = i; j < stripped.length; j++) {
+        if (stripped[j] === '{') depth++;
+        else if (stripped[j] === '}') { depth--; if (depth === 0) { end = j; break; } }
+      }
+      if (end === -1) { i++; continue; }
+      const candidate = stripped.slice(i, end + 1);
+      if (candidate.length > best.length) best = candidate;
+      i = end + 1;
+    }
+
+    if (!best) throw new Error('AI вернул некорректный JSON');
+    return this.repairJson(best);
+  }
+
+  async markReportFailed(reportId: string, errorMessage: string): Promise<void> {
+    const report = await this.reportRepo.findOne({ where: { id: reportId } });
+    if (!report || report.status !== ReportStatus.PENDING) return;
+    report.status = ReportStatus.ERROR;
+    report.errorMessage = errorMessage;
+    await this.reportRepo.save(report);
+    this.logger.warn(`Report ${reportId} marked as failed after all retries: ${errorMessage}`);
+  }
+
+  private repairJson(text: string): string {
+    return text
+      .replace(/,(\s*[}\]])/g, '$1')           // trailing commas
+      .replace(/}(\s*)\n(\s*){/g, '},\n$2{')   // missing comma between adjacent objects
+      .replace(/](\s*)\n(\s*)\[/g, '],\n$2['); // missing comma between adjacent arrays
   }
 
   private buildImprovementsPrompt(profile: Profile, allProjects: Project[]): string {

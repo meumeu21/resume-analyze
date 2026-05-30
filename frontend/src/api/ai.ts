@@ -19,7 +19,7 @@ export interface AiReport {
   id: string;
   userId: string;
   projectId: string | null;
-  reportType: 'activity_field' | 'improvements' | 'project_summary' | 'resume';
+  reportType: 'activity_field' | 'improvements' | 'project_summary' | 'resume' | 'coordinates' | 'skill_map' | 'network_graph';
   status: 'pending' | 'done' | 'error';
   summary: string | null;
   rawResponse: Record<string, unknown> | null;

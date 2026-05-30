@@ -12,7 +12,7 @@ import ProjectPreview from "../components/ProjectPreview";
 import { useAuth } from "../context/AuthContext";
 import {
   getMyProfile, getUserProfile, followUser, unfollowUser,
-  patchMyProfile, updateContacts, uploadAvatar,
+  patchMyProfile, updateContacts, uploadAvatar, deleteCoordinates, deleteSkillMap, deleteNetworkGraph,
 } from "../api/users";
 import type { MyProfileResponse, UserProfileResponse, ContactType } from "../api/users";
 import { createProject, getFavoriteProjects, addFavorite, removeFavorite } from "../api/projects";
@@ -24,6 +24,10 @@ import type { GithubAccountData } from "../api/github";
 import { generateReport, getReport } from "../api/ai";
 
 import Avatar from "../components/Avatar";
+import CoordinatesChart from "../components/CoordinatesChart";
+import SkillMapChart from "../components/SkillMapChart";
+import NetworkGraphChart from "../components/NetworkGraphChart";
+import ActivityChart from "../components/ActivityChart";
 import starIcon from "../images/icons/ai-star.svg";
 import Footer from "../components/Footer";
 
@@ -113,6 +117,15 @@ function ProfilePage() {
 
   const [classifying, setClassifying] = useState(false);
   const [classifyError, setClassifyError] = useState('');
+
+  const [coordinatesLoading, setCoordinatesLoading] = useState(false);
+  const [coordinatesError, setCoordinatesError] = useState('');
+
+  const [skillMapLoading, setSkillMapLoading] = useState(false);
+  const [skillMapError, setSkillMapError] = useState('');
+
+  const [networkGraphLoading, setNetworkGraphLoading] = useState(false);
+  const [networkGraphError, setNetworkGraphError] = useState('');
 
   const [githubAccount, setGithubAccount] = useState<GithubAccountData | null>(null);
   const [githubAccountLoading, setGithubAccountLoading] = useState(false);
@@ -296,7 +309,7 @@ function ProfilePage() {
       let reportId = report.id;
       let status = report.status;
       let polls = 0;
-      while (status === 'pending' && polls < 40) {
+      while (status === 'pending' && polls < 70) {
         await new Promise((r) => setTimeout(r, 3000));
         const updated = await getReport(accessToken, reportId);
         status = updated.status;
@@ -318,6 +331,117 @@ function ProfilePage() {
     } finally {
       setClassifying(false);
     }
+  }
+
+  async function handleBuildCoordinates() {
+    if (!accessToken) return;
+    setCoordinatesLoading(true);
+    setCoordinatesError('');
+    try {
+      const report = await generateReport(accessToken, 'coordinates');
+      let reportId = report.id;
+      let status = report.status;
+      let polls = 0;
+      while (status === 'pending' && polls < 70) {
+        await new Promise((r) => setTimeout(r, 3000));
+        const updated = await getReport(accessToken, reportId);
+        status = updated.status;
+        reportId = updated.id;
+        polls += 1;
+      }
+      if (status === 'pending') {
+        setCoordinatesError('Анализ не завершился. Попробуйте ещё раз.');
+        return;
+      }
+      if (status === 'error') {
+        setCoordinatesError('Не удалось построить график. Попробуйте ещё раз.');
+        return;
+      }
+      const fresh = await getMyProfile(accessToken);
+      setMyProfile(fresh);
+    } catch {
+      setCoordinatesError('Ошибка при построении графика.');
+    } finally {
+      setCoordinatesLoading(false);
+    }
+  }
+
+  async function handleDeleteCoordinates() {
+    if (!accessToken) return;
+    try {
+      await deleteCoordinates(accessToken);
+      setMyProfile((prev) => prev ? { ...prev, coordinates: null } : prev);
+    } catch {}
+  }
+
+  async function handleBuildSkillMap() {
+    if (!accessToken) return;
+    setSkillMapLoading(true);
+    setSkillMapError('');
+    try {
+      const report = await generateReport(accessToken, 'skill_map');
+      let reportId = report.id;
+      let status = report.status;
+      let polls = 0;
+      while (status === 'pending' && polls < 70) {
+        await new Promise((r) => setTimeout(r, 3000));
+        const updated = await getReport(accessToken, reportId);
+        status = updated.status;
+        reportId = updated.id;
+        polls += 1;
+      }
+      if (status === 'pending') { setSkillMapError('Анализ не завершился. Попробуйте ещё раз.'); return; }
+      if (status === 'error') { setSkillMapError('Не удалось построить карту. Попробуйте ещё раз.'); return; }
+      const fresh = await getMyProfile(accessToken);
+      setMyProfile(fresh);
+    } catch {
+      setSkillMapError('Ошибка при построении карты навыков.');
+    } finally {
+      setSkillMapLoading(false);
+    }
+  }
+
+  async function handleDeleteSkillMap() {
+    if (!accessToken) return;
+    try {
+      await deleteSkillMap(accessToken);
+      setMyProfile((prev) => prev ? { ...prev, skillMap: null } : prev);
+    } catch {}
+  }
+
+  async function handleBuildNetworkGraph() {
+    if (!accessToken) return;
+    setNetworkGraphLoading(true);
+    setNetworkGraphError('');
+    try {
+      const report = await generateReport(accessToken, 'network_graph');
+      let reportId = report.id;
+      let status = report.status;
+      let polls = 0;
+      while (status === 'pending' && polls < 70) {
+        await new Promise((r) => setTimeout(r, 3000));
+        const updated = await getReport(accessToken, reportId);
+        status = updated.status;
+        reportId = updated.id;
+        polls += 1;
+      }
+      if (status === 'pending') { setNetworkGraphError('Анализ не завершился. Попробуйте ещё раз.'); return; }
+      if (status === 'error') { setNetworkGraphError('Не удалось построить граф. Попробуйте ещё раз.'); return; }
+      const fresh = await getMyProfile(accessToken);
+      setMyProfile(fresh);
+    } catch {
+      setNetworkGraphError('Ошибка при построении графа.');
+    } finally {
+      setNetworkGraphLoading(false);
+    }
+  }
+
+  async function handleDeleteNetworkGraph() {
+    if (!accessToken) return;
+    try {
+      await deleteNetworkGraph(accessToken);
+      setMyProfile((prev) => prev ? { ...prev, networkGraph: null } : prev);
+    } catch {}
   }
 
   async function handleBioSave(value: string) {
@@ -423,6 +547,17 @@ function ProfilePage() {
   }
   const iconContacts = contacts.filter((c) => c.type !== 'other');
   const otherContact = contacts.find((c) => c.type === 'other');
+
+  const ownHasCoords = !!myProfile?.coordinates;
+  const ownHasSkill = !!(myProfile?.skillMap && myProfile.skillMap.length > 0);
+  const ownHasNetwork = !!(myProfile?.networkGraph && myProfile.networkGraph.nodes.length > 0);
+  const ownAiCount = [ownHasCoords, ownHasSkill, ownHasNetwork].filter(Boolean).length;
+  const ownGridCount = isEditing ? 3 : ownAiCount;
+
+  const otherHasCoords = !!otherProfile?.coordinates;
+  const otherHasSkill = !!(otherProfile?.skillMap && otherProfile.skillMap.length > 0);
+  const otherHasNetwork = !!(otherProfile?.networkGraph && otherProfile.networkGraph.nodes.length > 0);
+  const otherAiCount = [otherHasCoords, otherHasSkill, otherHasNetwork].filter(Boolean).length;
 
   return (
     <>
@@ -587,6 +722,54 @@ function ProfilePage() {
                     onSave={handleBioSave}
                   />
                 )}
+                <div className={`profile-charts-grid profile-charts-grid--${ownGridCount}`}>
+                  {(isEditing || ownHasNetwork) && (
+                    <div className="profile-chart-cell">
+                      {ownHasNetwork && <NetworkGraphChart data={myProfile!.networkGraph!} />}
+                      {isEditing && (
+                        <div className="coordinates-actions">
+                          <button className="button-light text" onClick={handleBuildNetworkGraph} disabled={networkGraphLoading}>
+                            {networkGraphLoading ? 'Анализ...' : ownHasNetwork ? 'Перегенерировать граф' : 'Построить граф технологий'}
+                          </button>
+                          {ownHasNetwork && <button className="button-light text" onClick={handleDeleteNetworkGraph}>Удалить граф</button>}
+                          {networkGraphError && <p className="error-text text">{networkGraphError}</p>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {(isEditing || ownHasSkill) && (
+                    <div className="profile-chart-cell">
+                      {ownHasSkill && <SkillMapChart skills={myProfile!.skillMap!} />}
+                      {isEditing && (
+                        <div className="coordinates-actions">
+                          <button className="button-light text" onClick={handleBuildSkillMap} disabled={skillMapLoading}>
+                            {skillMapLoading ? 'Анализ...' : ownHasSkill ? 'Перегенерировать карту' : 'Построить карту навыков'}
+                          </button>
+                          {ownHasSkill && <button className="button-light text" onClick={handleDeleteSkillMap}>Удалить карту</button>}
+                          {skillMapError && <p className="error-text text">{skillMapError}</p>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {(isEditing || ownHasCoords) && (
+                    <div className="profile-chart-cell">
+                      {ownHasCoords && <CoordinatesChart x={myProfile!.coordinates!.x} y={myProfile!.coordinates!.y} />}
+                      {isEditing && (
+                        <div className="coordinates-actions">
+                          <button className="button-light text" onClick={handleBuildCoordinates} disabled={coordinatesLoading}>
+                            {coordinatesLoading ? 'Анализ...' : ownHasCoords ? 'Перегенерировать' : 'Построить график'}
+                          </button>
+                          {ownHasCoords && <button className="button-light text" onClick={handleDeleteCoordinates}>Удалить график</button>}
+                          {coordinatesError && <p className="error-text text">{coordinatesError}</p>}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="profile-chart-cell profile-chart-cell--activity">
+                    <ActivityChart projects={myProfile?.projects ?? []} />
+                  </div>
+                </div>
+
                 <div className="profile-content__projects-container">
                   {(myProfile?.projects ?? []).map((p, i) => (
                     <ProjectPreview
@@ -671,6 +854,26 @@ function ProfilePage() {
             ) : (
               <>
                 {otherProfile?.bio && <TextField title="Обо мне" text={otherProfile.bio} />}
+                <div className={`profile-charts-grid profile-charts-grid--${otherAiCount}`}>
+                  {otherHasNetwork && (
+                    <div className="profile-chart-cell">
+                      <NetworkGraphChart data={otherProfile!.networkGraph!} />
+                    </div>
+                  )}
+                  {otherHasSkill && (
+                    <div className="profile-chart-cell">
+                      <SkillMapChart skills={otherProfile!.skillMap!} />
+                    </div>
+                  )}
+                  {otherHasCoords && (
+                    <div className="profile-chart-cell">
+                      <CoordinatesChart x={otherProfile!.coordinates!.x} y={otherProfile!.coordinates!.y} />
+                    </div>
+                  )}
+                  <div className="profile-chart-cell profile-chart-cell--activity">
+                    <ActivityChart projects={otherProfile?.publicProjects ?? []} />
+                  </div>
+                </div>
                 {(otherProfile?.publicProjects ?? []).length > 0 && (
                   <div className="profile-content__projects-container">
                     {(otherProfile?.publicProjects ?? []).map((p, i) => (

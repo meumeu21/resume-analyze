@@ -10,6 +10,9 @@ export enum ReportType {
   IMPROVEMENTS = 'improvements',
   PROJECT_SUMMARY = 'project_summary',
   RESUME = 'resume',
+  COORDINATES = 'coordinates',
+  SKILL_MAP = 'skill_map',
+  NETWORK_GRAPH = 'network_graph',
 }
 
 export enum ReportStatus {

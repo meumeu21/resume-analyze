@@ -359,3 +359,83 @@
 .github-username-input {
     max-width: 260px;
 }
+
+/* chart components */
+.coordinates-chart,
+.skill-map-chart,
+.network-graph-chart,
+.activity-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    border: 1px solid #000;
+    border-radius: 12px;
+}
+
+.coordinates-chart__title,
+.activity-chart__title {
+    margin: 0;
+    font-size: 20px;
+}
+
+/* Charts grid layout */
+.profile-charts-grid {
+    display: grid;
+    gap: 16px;
+}
+
+.profile-chart-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* bordered chart box fills the full cell height */
+.profile-chart-cell > .coordinates-chart,
+.profile-chart-cell > .skill-map-chart,
+.profile-chart-cell > .network-graph-chart {
+    flex: 1;
+}
+
+/* SVG centered inside the box */
+.chart__svg-center {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 0 AI charts: activity full width */
+.profile-charts-grid--0 {
+    grid-template-columns: 1fr;
+}
+
+/* 1 AI chart: chart + activity side by side */
+.profile-charts-grid--1 {
+    grid-template-columns: 1fr 1fr;
+}
+
+/* 2 AI charts: 2 in row 1, activity full width below */
+.profile-charts-grid--2 {
+    grid-template-columns: 1fr 1fr;
+}
+.profile-charts-grid--2 .profile-chart-cell--activity {
+    grid-column: 1 / -1;
+}
+
+/* 3 AI charts: 3 in row 1, activity full width below */
+.profile-charts-grid--3 {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+.profile-charts-grid--3 .profile-chart-cell--activity {
+    grid-column: 1 / -1;
+}
+
+.coordinates-actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}

@@ -8,5 +8,6 @@ import { VisualizationService } from './visualization.service';
   imports: [TypeOrmModule.forFeature([Profile, Project])],
   controllers: [VisualizationController],
   providers: [VisualizationService],
+  exports: [VisualizationService],
 })
 export class VisualizationModule {}

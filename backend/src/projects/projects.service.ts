@@ -9,7 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Repository } from 'typeorm';
 import {
-  Favorite, Project, ProjectFile, ProjectFileType, ProjectSource,
+  Favorite, Profile, Project, ProjectFile, ProjectFileType, ProjectSource,
 } from '../database/entities';
 import { GithubService } from '../github/github.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -17,10 +17,13 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 
 @Injectable()
 export class ProjectsService {
+  private static readonly MAX_HARD_SKILLS = 12;
+
   constructor(
     @InjectRepository(Project) private readonly projectRepo: Repository<Project>,
     @InjectRepository(ProjectFile) private readonly fileRepo: Repository<ProjectFile>,
     @InjectRepository(Favorite) private readonly favoriteRepo: Repository<Favorite>,
+    @InjectRepository(Profile) private readonly profileRepo: Repository<Profile>,
     private readonly githubService: GithubService,
   ) {}
 
@@ -167,9 +170,38 @@ export class ProjectsService {
 
     project.githubRepoId = repo.id;
     project.source = ProjectSource.GITHUB;
+
+    if (!project.title && repo.name) project.title = repo.name;
+    if (!project.description && repo.description) project.description = repo.description;
+
+    const repoLanguages = Object.keys(repo.languages);
+    if (!project.stack.length && repoLanguages.length) project.stack = repoLanguages;
+
     await this.projectRepo.save(project);
 
+    await this.addLanguagesToHardSkills(userId, repoLanguages);
+
     return repo;
+  }
+
+  private async addLanguagesToHardSkills(userId: string, languages: string[]): Promise<void> {
+    if (!languages.length) return;
+    const profile = await this.profileRepo.findOne({ where: { userId } });
+    if (!profile) return;
+
+    const existingNames = new Set(profile.hardSkills.map((s) => s.name.toLowerCase()));
+    const slots = ProjectsService.MAX_HARD_SKILLS - profile.hardSkills.length;
+    if (slots <= 0) return;
+
+    const toAdd = languages
+      .filter((lang) => !existingNames.has(lang.toLowerCase()))
+      .slice(0, slots)
+      .map((name) => ({ name, level: 3 }));
+
+    if (!toAdd.length) return;
+
+    profile.hardSkills = [...profile.hardSkills, ...toAdd];
+    await this.profileRepo.save(profile);
   }
 
   private async deleteFileFromDisk(fileUrl: string): Promise<void> {

@@ -313,103 +313,62 @@ export class AiService {
   }
 
   private async processSkillMapReport(report: AiReport, profile: Profile): Promise<void> {
-    const allProjects = await this.projectRepo.find({ where: { userId: report.userId } });
+    const skills = profile.hardSkills.map((s) => ({
+      name: s.name,
+      value: s.level,
+    }));
 
-    try {
-      const prompt = this.buildSkillMapPrompt(profile, allProjects);
-      const completion = await this.callAI({
-        model: 'mistral-small-latest',
-        max_tokens: 1500,
-        messages: [
-          { role: 'system', content: 'Ты аналитик IT-специализаций. Отвечай ТОЛЬКО JSON-объектом без markdown и пояснений.' },
-          { role: 'user', content: prompt },
-        ],
-      });
+    profile.skillMap = skills;
+    await this.profileRepo.save(profile);
 
-      const rawText = completion.choices[0]?.message?.content ?? '';
-      const data: { skills: { name: string; value: number }[] } = JSON.parse(this.extractJson(rawText));
-
-      const skills = data.skills.map((s) => ({
-        name: String(s.name),
-        value: Math.max(0, Math.min(10, Number(s.value))),
-      }));
-
-      profile.skillMap = skills;
-      await this.profileRepo.save(profile);
-
-      report.status = ReportStatus.DONE;
-      report.rawResponse = data as unknown as Record<string, unknown>;
-      report.summary = skills.map((s) => `${s.name}: ${s.value}`).join(', ');
-    } catch (err) {
-      report.status = ReportStatus.ERROR;
-      report.errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
-      this.logger.error(`SkillMap report ${report.id} failed: ${report.errorMessage}`);
-    }
-
+    report.status = ReportStatus.DONE;
+    report.rawResponse = { skills } as unknown as Record<string, unknown>;
+    report.summary = skills.map((s) => `${s.name}: ${s.value}`).join(', ');
     await this.reportRepo.save(report);
     this.logger.log(`SkillMap report ${report.id} finished with status ${report.status}`);
   }
 
-  private buildSkillMapPrompt(profile: Profile, allProjects: Project[]): string {
-    const skillNames = profile.hardSkills.map((s) => s.name);
-    const projectsInfo = allProjects.length
-      ? allProjects.map((p) => [
-          `— ${p.title}`,
-          p.description ? `  Описание: ${p.description}` : null,
-          p.stack.length ? `  Стек: ${p.stack.join(', ')}` : null,
-          p.role ? `  Роль: ${p.role}` : null,
-        ].filter(Boolean).join('\n')).join('\n\n')
-      : 'Проекты не указаны';
-
-    return `Оцени разработчика по следующим направлениям на основе его проектов и навыков.
-Оценка: от 0 (полное отсутствие) до 10 (экспертный уровень).
-Оценивай честно — большинство направлений должны быть 0-3 для обычного разработчика.
-
-=== НАПРАВЛЕНИЯ ===
-Frontend, Backend, DevOps, Data/ML, Algorithms, Testing, Mobile, Security
-
-=== ПРОЕКТЫ ===
-${projectsInfo}
-
-=== НАВЫКИ ===
-${skillNames.length ? skillNames.join(', ') : 'не указаны'}
-${profile.activityField ? `Специализация: ${profile.activityField}` : ''}
-${profile.bio ? `О себе: ${profile.bio}` : ''}
-
-Верни ТОЛЬКО JSON:
-{"skills": [
-  {"name": "Frontend", "value": 0},
-  {"name": "Backend", "value": 0},
-  {"name": "DevOps", "value": 0},
-  {"name": "Data/ML", "value": 0},
-  {"name": "Algorithms", "value": 0},
-  {"name": "Testing", "value": 0},
-  {"name": "Mobile", "value": 0},
-  {"name": "Security", "value": 0}
-]}`;
-  }
 
   private async processNetworkGraphReport(report: AiReport, profile: Profile): Promise<void> {
     const allProjects = await this.projectRepo.find({ where: { userId: report.userId } });
 
+    if (!allProjects.length) {
+      report.status = ReportStatus.ERROR;
+      report.errorMessage = 'Нет проектов для построения графа';
+      await this.reportRepo.save(report);
+      return;
+    }
+
+    const githubRepoIds = allProjects.map((p) => p.githubRepoId).filter((id): id is string => !!id);
+    const githubRepos = githubRepoIds.length
+      ? await this.githubRepoRepo.find({ where: githubRepoIds.map((id) => ({ id })) })
+      : [];
+    const githubRepoMap = new Map(githubRepos.map((r) => [r.id, r]));
+
+    const projectsInfo = allProjects.map((p) => {
+      const repo = p.githubRepoId ? githubRepoMap.get(p.githubRepoId) : null;
+      const description = p.description ? p.description.slice(0, 150) : '';
+      const readme = repo?.readmeExcerpt ? repo.readmeExcerpt.slice(0, 200) : '';
+      const context = [description, readme].filter(Boolean).join(' ');
+      return `— ${p.title}${context ? `\n  ${context}` : ''}`;
+    }).join('\n\n');
+
     try {
-      const prompt = this.buildNetworkGraphPrompt(profile, allProjects);
-      // mistral-small-latest: no mandatory thinking, reliable compact JSON output
       const completion = await this.callAI({
         model: 'mistral-small-latest',
-        max_tokens: 8192,
+        max_tokens: 4096,
         messages: [
-          { role: 'system', content: 'Ты аналитик IT-специализаций. Отвечай ТОЛЬКО валидным компактным JSON одной строкой без markdown и пояснений.' },
-          { role: 'user', content: prompt },
+          {
+            role: 'system',
+            content: 'Ты аналитик интересов IT-разработчика. Отвечай ТОЛЬКО валидным компактным JSON одной строкой без markdown и пояснений.',
+          },
+          { role: 'user', content: this.buildInterestGraphPrompt(projectsInfo) },
         ],
       });
 
       const rawText = completion.choices[0]?.message?.content ?? '';
-      report.rawResponse = { preview: rawText.slice(-400) } as unknown as Record<string, unknown>;
-
       const parsed = JSON.parse(this.extractJson(rawText));
 
-      // Robustly find nodes/edges regardless of how AI wrapped the result
       let resolvedData: { nodes: unknown; edges: unknown } = parsed;
       if (!Array.isArray(parsed?.nodes) && parsed && typeof parsed === 'object') {
         for (const val of Object.values(parsed)) {
@@ -419,10 +378,8 @@ ${profile.bio ? `О себе: ${profile.bio}` : ''}
           }
         }
       }
-
       if (!Array.isArray(resolvedData?.nodes)) {
-        const keys = parsed && typeof parsed === 'object' ? Object.keys(parsed).join(', ') : String(parsed);
-        throw new Error(`Неожиданная структура JSON: keys=[${keys}]`);
+        throw new Error('Неожиданная структура JSON от AI');
       }
 
       const data = resolvedData as {
@@ -430,7 +387,6 @@ ${profile.bio ? `О себе: ${profile.bio}` : ''}
         edges: { source: string; target: string }[];
       };
 
-      // Sanitise: clamp weight, remove edges referencing missing nodes
       const nodeIds = new Set(data.nodes.map((n) => n.id));
       const nodes = data.nodes.map((n) => ({
         id: String(n.id),
@@ -438,8 +394,7 @@ ${profile.bio ? `О себе: ${profile.bio}` : ''}
         type: n.type === 'domain' ? ('domain' as const) : ('technology' as const),
         weight: Math.max(1, Math.min(5, Number(n.weight) || 1)),
       }));
-      const rawEdges = Array.isArray(data.edges) ? data.edges : [];
-      const edges = rawEdges
+      const edges = (Array.isArray(data.edges) ? data.edges : [])
         .filter((e) => e && nodeIds.has(e.source) && nodeIds.has(e.target) && e.source !== e.target)
         .map((e) => ({ source: String(e.source), target: String(e.target) }));
 
@@ -459,38 +414,22 @@ ${profile.bio ? `О себе: ${profile.bio}` : ''}
     this.logger.log(`NetworkGraph report ${report.id} finished with status ${report.status}`);
   }
 
-  private buildNetworkGraphPrompt(profile: Profile, allProjects: Project[]): string {
-    const skillNames = profile.hardSkills.map((s) => s.name);
-    const projectsInfo = allProjects.length
-      ? allProjects.map((p) => [
-          `— ${p.title}`,
-          p.description ? `  Описание: ${p.description}` : null,
-          p.stack.length ? `  Стек: ${p.stack.join(', ')}` : null,
-          p.role ? `  Роль: ${p.role}` : null,
-          p.tags.length ? `  Теги: ${p.tags.join(', ')}` : null,
-        ].filter(Boolean).join('\n')).join('\n\n')
-      : 'Проекты не указаны';
+  private buildInterestGraphPrompt(projectsInfo: string): string {
+    return `Проанализируй проекты разработчика и построй граф его интересов.
 
-    return `Проанализируй разработчика и построй граф его технологического стека.
-
-=== ДАННЫЕ ===
-${profile.activityField ? `Специализация: ${profile.activityField}` : ''}
-Навыки: ${skillNames.length ? skillNames.join(', ') : 'не указаны'}
-${profile.bio ? `О себе: ${profile.bio}` : ''}
-
-=== ПРОЕКТЫ ===
+=== ПРОЕКТЫ (название + описание/README) ===
 ${projectsInfo}
 
-=== ПРАВИЛА ПОСТРОЕНИЯ ГРАФА ===
-1. Узлы-ОБЛАСТИ (type "domain"): Frontend, Backend, DevOps, Mobile, AI/ML, Testing, Security, GameDev и т.д. — только реально присутствующие у разработчика (weight 3-5)
-2. Узлы-ТЕХНОЛОГИИ (type "technology"): конкретные технологии из проектов и навыков — weight 1-5 пропорционально частоте/важности
-3. РЁБРА: технология → область к которой относится; технология ↔ технология если использовались в одном проекте
-4. ОГРАНИЧЕНИЯ: 10-18 узлов, 10-25 рёбер, нет изолированных узлов
-5. id узла — строчный английский без пробелов (например "react", "node_js", "frontend")
+=== ПРАВИЛА ===
+1. ОБЛАСТИ (type "domain", weight 3-5): широкие тематические области из проектов (например: "Веб-разработка", "Автоматизация", "Геймдев", "Data Science"). Только реально присутствующие.
+2. ИНТЕРЕСЫ (type "technology", weight 1-4): конкретная тема каждого проекта, выведенная из его названия и описания. Одно короткое существительное или словосочетание (2-3 слова).
+3. РЁБРА: интерес → область к которой относится; область ↔ область если тематически связаны.
+4. ОГРАНИЧЕНИЯ: 8-16 узлов, нет изолированных узлов, id — строчный латинский без пробелов.
 
-Верни ТОЛЬКО компактный JSON одной строкой (без пробелов и переносов):
-{"nodes":[{"id":"react","label":"React","type":"technology","weight":4},{"id":"frontend","label":"Frontend","type":"domain","weight":5}],"edges":[{"source":"react","target":"frontend"}]}`;
+Верни ТОЛЬКО компактный JSON одной строкой:
+{"nodes":[{"id":"web","label":"Веб-разработка","type":"domain","weight":5},{"id":"resume_analyzer","label":"Анализ резюме","type":"technology","weight":3}],"edges":[{"source":"resume_analyzer","target":"web"}]}`;
   }
+
 
   private buildCoordinatesPrompt(profile: Profile, allProjects: Project[]): string {
     const skillNames = profile.hardSkills.map((s) => s.name);

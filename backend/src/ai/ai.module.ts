@@ -9,7 +9,6 @@ import { AiController } from './ai.controller';
 import { AiPublicController } from './ai-public.controller';
 import { AiService, AI_REPORTS_QUEUE } from './ai.service';
 import { AiProcessor } from './ai.processor';
-
 @Module({
   imports: [
     TypeOrmModule.forFeature([AiReport, Profile, Project, GithubRepo]),

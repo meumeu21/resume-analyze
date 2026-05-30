@@ -15,6 +15,7 @@ import { Repository } from 'typeorm';
 import {
   AiReport, ContactLink, Profile, Project, ReportStatus, ReportType, User,
 } from '../database/entities';
+import { VisualizationService } from '../visualization/visualization.service';
 
 type Doc = InstanceType<typeof PDFDocument>;
 
@@ -29,6 +30,7 @@ export class ExportService {
     @InjectRepository(Profile) private readonly profileRepo: Repository<Profile>,
     @InjectRepository(ContactLink) private readonly contactRepo: Repository<ContactLink>,
     @InjectRepository(Project) private readonly projectRepo: Repository<Project>,
+    private readonly visualizationService: VisualizationService,
   ) {}
 
   async generateProfileResume(targetId: string, currentUserId: string): Promise<Buffer> {
@@ -326,7 +328,7 @@ export class ExportService {
         this.section(doc, 'Hard skills');
         const chartY = doc.y + 10;
         const cx = 297;
-        this.drawRadarChart(doc, profile.hardSkills, cx, chartY + 110, 90);
+        this.visualizationService.drawRadarChart(doc, profile.hardSkills, cx, chartY + 110, 90);
         doc.y = chartY + 230;
         doc.moveDown(0.5);
       } else if (profile.hardSkills.length > 0) {
@@ -342,15 +344,15 @@ export class ExportService {
         this.section(doc, 'Позиционирование разработчика');
         const cx = 297;
         const cy = doc.y + 80;
-        this.drawCoordinatesGraph(doc, profile.coordinates, cx, cy, 70);
+        this.visualizationService.drawCoordinatesGraph(doc, profile.coordinates, cx, cy, 70);
         doc.y = cy + 90;
         doc.moveDown(0.5);
       }
 
-      const interests = this.buildInterestCloud(projects);
+      const interests = this.visualizationService.buildInterestCloud(projects);
       if (interests.length) {
         this.section(doc, 'Сфера интересов');
-        this.drawInterestCloud(doc, interests);
+        this.visualizationService.drawInterestCloud(doc, interests);
         doc.moveDown(0.8);
       }
 
@@ -402,179 +404,6 @@ export class ExportService {
 
       doc.end();
     });
-  }
-
-  private drawRadarChart(
-    doc: Doc,
-    skills: { name: string; level: number }[],
-    cx: number,
-    cy: number,
-    r: number,
-  ) {
-    const n = skills.length;
-    const step = (2 * Math.PI) / n;
-    const angleOf = (i: number) => i * step - Math.PI / 2;
-
-    for (let lvl = 1; lvl <= 5; lvl++) {
-      const rLvl = (lvl / 5) * r;
-      const pts = skills.map((_, i) => {
-        const a = angleOf(i);
-        return { x: cx + rLvl * Math.cos(a), y: cy + rLvl * Math.sin(a) };
-      });
-      doc.save();
-      doc.moveTo(pts[0].x, pts[0].y);
-      for (let i = 1; i < pts.length; i++) doc.lineTo(pts[i].x, pts[i].y);
-      doc.closePath()
-        .strokeColor(lvl === 5 ? '#bbbbbb' : '#e8e8e8')
-        .lineWidth(0.5)
-        .stroke();
-      doc.restore();
-    }
-
-    for (let i = 0; i < n; i++) {
-      const a = angleOf(i);
-      doc.save()
-        .moveTo(cx, cy)
-        .lineTo(cx + r * Math.cos(a), cy + r * Math.sin(a))
-        .strokeColor('#cccccc').lineWidth(0.5).stroke()
-        .restore();
-    }
-
-    const skillPts = skills.map((s, i) => {
-      const a = angleOf(i);
-      const rS = (s.level / 5) * r;
-      return { x: cx + rS * Math.cos(a), y: cy + rS * Math.sin(a) };
-    });
-
-    doc.save();
-    doc.moveTo(skillPts[0].x, skillPts[0].y);
-    for (let i = 1; i < skillPts.length; i++) doc.lineTo(skillPts[i].x, skillPts[i].y);
-    doc.closePath()
-      .fillColor('#2c7be5').fillOpacity(0.25).fill();
-    doc.restore();
-
-    doc.save();
-    doc.moveTo(skillPts[0].x, skillPts[0].y);
-    for (let i = 1; i < skillPts.length; i++) doc.lineTo(skillPts[i].x, skillPts[i].y);
-    doc.closePath()
-      .strokeColor('#2c7be5').lineWidth(1.5).stroke();
-    doc.restore();
-
-    for (let i = 0; i < n; i++) {
-      const a = angleOf(i);
-      const labelR = r + 18;
-      const lx = cx + labelR * Math.cos(a) - 30;
-      const ly = cy + labelR * Math.sin(a) - 6;
-      doc.font('Regular').fontSize(7).fillColor('#444444')
-        .text(skills[i].name, lx, ly, { width: 60, align: 'center' });
-    }
-  }
-
-  private drawCoordinatesGraph(
-    doc: Doc,
-    coords: { x: number; y: number },
-    cx: number,
-    cy: number,
-    r: number,
-  ) {
-    doc.save()
-      .moveTo(cx - r, cy).lineTo(cx + r, cy)
-      .strokeColor('#aaaaaa').lineWidth(1).stroke()
-      .restore();
-    doc.save()
-      .moveTo(cx, cy - r).lineTo(cx, cy + r)
-      .strokeColor('#aaaaaa').lineWidth(1).stroke()
-      .restore();
-
-    const arr = 5;
-    doc.save()
-      .moveTo(cx + r, cy).lineTo(cx + r - arr, cy - arr / 2)
-      .moveTo(cx + r, cy).lineTo(cx + r - arr, cy + arr / 2)
-      .strokeColor('#aaaaaa').lineWidth(1).stroke()
-      .restore();
-    doc.save()
-      .moveTo(cx, cy - r).lineTo(cx - arr / 2, cy - r + arr)
-      .moveTo(cx, cy - r).lineTo(cx + arr / 2, cy - r + arr)
-      .strokeColor('#aaaaaa').lineWidth(1).stroke()
-      .restore();
-
-    doc.font('Regular').fontSize(7).fillColor('#666666')
-      .text('Низкоуровневое', cx - r - 2, cy + 3, { width: 70, align: 'right' })
-      .text('Высокоуровневое', cx + r - 68, cy + 3, { width: 70 })
-      .text('Инженерный', cx - 25, cy - r - 14, { width: 50, align: 'center' })
-      .text('Продуктовый', cx - 25, cy + r + 4, { width: 50, align: 'center' });
-
-    const colors = ['#eaf2ff', '#fff4ea', '#eafff0', '#fff0f5'];
-    const quads = [
-      { dx: 0, dy: -r, w: r, h: r },
-      { dx: 0, dy: 0, w: r, h: r },
-      { dx: -r, dy: -r, w: r, h: r },
-      { dx: -r, dy: 0, w: r, h: r },
-    ];
-    quads.forEach(({ dx, dy, w, h }, qi) => {
-      doc.save()
-        .rect(cx + dx, cy + dy, w, h)
-        .fillColor(colors[qi]).fillOpacity(0.4).fill()
-        .restore();
-    });
-
-    const px = cx + (coords.x / 5) * r;
-    const py = cy - (coords.y / 5) * r;
-    doc.save()
-      .circle(px, py, 6)
-      .fillColor('#2c7be5').fillOpacity(1).fill()
-      .restore();
-    doc.save()
-      .circle(px, py, 6)
-      .strokeColor('#ffffff').lineWidth(1.5).stroke()
-      .restore();
-  }
-
-  private buildInterestCloud(projects: Project[]) {
-    const weights = new Map<string, number>();
-    for (const p of projects) {
-      for (const term of [...p.stack, ...p.tags]) {
-        const t = term.trim();
-        if (t) weights.set(t, (weights.get(t) ?? 0) + 1);
-      }
-    }
-    return [...weights.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 20)
-      .map(([name, weight]) => ({ name, weight }));
-  }
-
-  private drawInterestCloud(doc: Doc, interests: { name: string; weight: number }[]) {
-    const maxWeight = interests[0]?.weight ?? 1;
-    let x = 50;
-    const startY = doc.y;
-    let y = startY;
-    const lineH = 22;
-
-    for (const { name, weight } of interests) {
-      const fontSize = 8 + Math.round((weight / maxWeight) * 6);
-      const textW = name.length * fontSize * 0.55 + 16;
-
-      if (x + textW > 545) {
-        x = 50;
-        y += lineH;
-      }
-
-      doc.save()
-        .roundedRect(x, y, textW, lineH - 4, 4)
-        .fillColor('#eef4ff').fillOpacity(0.8).fill()
-        .restore();
-
-      doc.font('Regular').fontSize(fontSize).fillColor('#2c7be5')
-        .text(name, x + 6, y + (lineH - 4 - fontSize) / 2 + 2, {
-          width: textW - 10,
-          lineBreak: false,
-        });
-
-      x += textW + 6;
-    }
-
-    doc.y = y + lineH + 4;
   }
 
   private buildTemplatePdf(): Promise<Buffer> {

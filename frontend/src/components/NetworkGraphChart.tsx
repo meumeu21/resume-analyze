@@ -137,7 +137,7 @@ export default function NetworkGraphChart({ data }: Props) {
 
   return (
     <div className="network-graph-chart">
-      <p className="coordinates-chart__title text bold">Граф технологий</p>
+      <p className="coordinates-chart__title text bold">Граф интересов</p>
       <div className="chart__svg-center">
       <svg
         width={W}
@@ -201,7 +201,7 @@ export default function NetworkGraphChart({ data }: Props) {
           <svg width={12} height={12} style={{ flexShrink: 0 }}>
             <circle cx={6} cy={6} r={5} fill={TECH_FILL} stroke={TECH_STROKE} strokeWidth={1.5} />
           </svg>
-          Технология
+          Интерес
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: '#555' }}>
           <svg width={12} height={12} style={{ flexShrink: 0 }}>

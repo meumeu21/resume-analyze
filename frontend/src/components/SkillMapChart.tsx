@@ -11,7 +11,7 @@ const SIZE = 340;
 const CENTER = SIZE / 2;
 const MAX_R = 120;
 const LABEL_R = MAX_R + 26;
-const GRID_LEVELS = [2, 4, 6, 8, 10];
+const GRID_LEVELS = [1, 2, 3, 4, 5];
 const FILL_COLOR = 'rgba(120, 110, 230, 0.18)';
 const STROKE_COLOR = 'rgba(120, 110, 230, 0.85)';
 
@@ -30,10 +30,10 @@ export default function SkillMapChart({ skills }: Props) {
   const angles = skills.map((_, i) => (2 * Math.PI * i) / n - Math.PI / 2);
 
   const gridPolygons = GRID_LEVELS.map((lvl) =>
-    angles.map((a) => toXY((lvl / 10) * MAX_R, a)),
+    angles.map((a) => toXY((lvl / 5) * MAX_R, a)),
   );
 
-  const valuePolygon = skills.map((s, i) => toXY((s.value / 10) * MAX_R, angles[i]));
+  const valuePolygon = skills.map((s, i) => toXY((s.value / 5) * MAX_R, angles[i]));
 
   return (
     <div className="skill-map-chart">
@@ -98,7 +98,7 @@ export default function SkillMapChart({ skills }: Props) {
               fill="#444"
             >
               <tspan x={pos.x} dy="0">{s.name}</tspan>
-              <tspan x={pos.x} dy="13" fontWeight="bold" fill={STROKE_COLOR}>{value}/10</tspan>
+              <tspan x={pos.x} dy="13" fontWeight="bold" fill={STROKE_COLOR}>{value}/5</tspan>
             </text>
           );
         })}

@@ -76,7 +76,7 @@ export interface DailyProjectResponse {
   };
 }
 
-import { apiFetch } from './client';
+import { apiFetch, ApiError } from './client';
 
 async function request<T>(url: string, options: RequestInit): Promise<T> {
   const res = await apiFetch(url, {
@@ -85,7 +85,7 @@ async function request<T>(url: string, options: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error((body as { message?: string }).message ?? `HTTP ${res.status}`);
+    throw new ApiError(res.status, (body as { message?: string }).message ?? `HTTP ${res.status}`);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
@@ -124,7 +124,7 @@ export async function uploadProjectFile(id: string, accessToken: string, file: F
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error((body as { message?: string }).message ?? `HTTP ${res.status}`);
+    throw new ApiError(res.status, (body as { message?: string }).message ?? `HTTP ${res.status}`);
   }
   return res.json() as Promise<ProjectFile>;
 }

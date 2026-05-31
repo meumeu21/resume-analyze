@@ -12,6 +12,7 @@ import {
   addFavorite, removeFavorite, fetchProjectGithubData, deleteProject,
 } from "../api/projects";
 import type { ProjectResponse } from "../api/projects";
+import { ApiError } from "../api/client";
 import { getUserProfile } from "../api/users";
 import { getGithubAccount } from "../api/github";
 import type { GithubRepoData } from "../api/github";
@@ -85,7 +86,11 @@ function Project() {
         setIsFavorited(p.isFavorited);
         setFavCount(p.favoritesCount);
       })
-      .catch((e: Error) => setLoadError(e.message));
+      .catch((e: unknown) => {
+        if (e instanceof ApiError && e.status === 404) navigate('/404', { replace: true });
+        else if (e instanceof ApiError && e.status >= 500) navigate('/500', { replace: true });
+        else setLoadError(e instanceof Error ? e.message : 'Ошибка загрузки');
+      });
   }, [id, accessToken]);
 
   useEffect(() => {

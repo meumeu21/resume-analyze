@@ -45,6 +45,7 @@ function AppRoutes() {
       <Route path="/projects/:id" element={<Project />} />
       <Route path="/developers" element={<Developers />} />
       <Route path="/neuro" element={<Neuro />} />
+      <Route path="/404" element={<ErrorPage code={404} />} />
       <Route path="/500" element={<ErrorPage code={500} />} />
       <Route path="*" element={<ErrorPage code={404} />} />
     </Routes>

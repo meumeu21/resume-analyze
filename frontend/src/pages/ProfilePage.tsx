@@ -14,6 +14,7 @@ import {
   getMyProfile, getUserProfile, followUser, unfollowUser,
   patchMyProfile, updateContacts, uploadAvatar, deleteCoordinates, deleteSkillMap, deleteNetworkGraph,
 } from "../api/users";
+import { ApiError } from "../api/client";
 import type { MyProfileResponse, UserProfileResponse, ContactType } from "../api/users";
 import { createProject, getFavoriteProjects, addFavorite, removeFavorite } from "../api/projects";
 import type { ContactLink } from "../api/auth";
@@ -149,12 +150,17 @@ function ProfilePage() {
   useEffect(() => {
     if (isOwn) {
       if (!accessToken) return;
-      getMyProfile(accessToken).then(setMyProfile).catch(() => {});
+      getMyProfile(accessToken).then(setMyProfile).catch((e: unknown) => {
+        if (e instanceof ApiError && e.status >= 500) navigate('/500', { replace: true });
+      });
     } else if (id) {
       getUserProfile(id, accessToken).then((p) => {
         setOtherProfile(p);
         setFollowing(p.isFollowing);
-      }).catch(() => {});
+      }).catch((e: unknown) => {
+        if (e instanceof ApiError && e.status === 404) navigate('/404', { replace: true });
+        else if (e instanceof ApiError && e.status >= 500) navigate('/500', { replace: true });
+      });
     }
   }, [id, accessToken, isOwn]);
 

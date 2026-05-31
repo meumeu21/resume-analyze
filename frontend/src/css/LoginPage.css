@@ -119,6 +119,17 @@
   left: 15%;
 }
 
+/* ─── Responsive ─── */
+@media (max-width: 480px) {
+  .card {
+    width: calc(100vw - 48px);
+    padding: 24px 20px;
+  }
+
+  .bubble1 { width: 140px; height: 140px; }
+  .bubble3 { width: 180px; height: 180px; }
+}
+
 /* анимация */
 @keyframes float {
   0% {

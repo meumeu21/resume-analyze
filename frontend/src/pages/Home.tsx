@@ -83,9 +83,6 @@ function Home() {
                                         <span key={tag} className="daily-project__tag">{tag}</span>
                                     ))}
                                 </div>
-                                <Link to={`/projects/${dailyProject.id}`} className="daily-project__link button text">
-                                    Открыть проект
-                                </Link>
                             </div>
 
                             <h3 className="daily-project__title">{dailyProject.title}</h3>
@@ -116,6 +113,9 @@ function Home() {
                                     </p>
                                 )}
                             </div>
+                            <Link to={`/projects/${dailyProject.id}`} className="daily-project__link button text">
+                                Открыть проект
+                            </Link>
                         </div>
                     ) : (
                         <p className="text">Публичных проектов пока нет</p>

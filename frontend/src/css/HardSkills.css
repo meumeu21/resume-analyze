@@ -43,6 +43,10 @@
 
 .hardskill-row__name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hardskill-select {
@@ -52,7 +56,9 @@
   border-radius: 8px;
   background: transparent;
   cursor: pointer;
-  flex-shrink: 0;
+  min-width: 0;
+  max-width: 160px;
+  box-sizing: border-box;
 }
 
 .hardskill-add-form {
@@ -62,14 +68,44 @@
   gap: 8px;
   padding-top: 4px;
   border-top: 1px solid #eee;
+  flex-wrap: wrap;
 }
 
 .hardskill-name-input {
   flex: 1;
+  min-width: 120px;
   font-family: inherit;
   padding: 6px 10px;
   border: 1px solid #000;
   border-radius: 8px;
   background: transparent;
   outline: none;
+  box-sizing: border-box;
+}
+
+@media (max-width: 576px) {
+  .hardskill-row {
+    flex-wrap: wrap;
+  }
+
+  .hardskill-row__name {
+    white-space: normal;
+  }
+
+  .hardskill-add-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hardskill-select,
+  .hardskill-name-input {
+    width: 100%;
+    max-width: none;
+  }
+
+  .hardskill-add-form .button-light {
+    width: 100%;
+    text-align: center;
+    box-sizing: border-box;
+  }
 }

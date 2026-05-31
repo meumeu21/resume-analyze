@@ -253,6 +253,8 @@
 
 .contact-url-input {
     flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
     font-family: inherit;
     padding: 6px 10px;
     border: 1px solid #000;
@@ -404,7 +406,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
 }
+
+.chart__svg-center svg {
+    max-width: 100%;
+    height: auto;
+}
+
 
 /* 0 AI charts: activity full width */
 .profile-charts-grid--0 {
@@ -438,4 +447,102 @@
     flex-wrap: wrap;
     gap: 10px;
     align-items: center;
+}
+
+/* ─── Responsive ─── */
+
+@media (max-width: 991.98px) {
+    .profile-layer-two{
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+    }
+
+    .edit-buttons{
+        width: 100%;
+    }
+
+    .fc{
+        width: 100%;
+    }
+
+    /* 3 AI charts: 3 cols → 2 cols */
+    .profile-charts-grid--3 {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    /* all charts → 1 col, activity full width */
+    .profile-charts-grid--1,
+    .profile-charts-grid--2,
+    .profile-charts-grid--3 {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-charts-grid--2 .profile-chart-cell--activity,
+    .profile-charts-grid--3 .profile-chart-cell--activity {
+        grid-column: 1;
+    }
+}
+
+/* 567px: metrics and contacts drop to full width below avatar */
+@media (max-width: 576px) {
+    .profile-layer-two {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .profile-header__contacts,
+    .contacts-editor {
+        grid-column: 1 / -1;
+        grid-row: 3;
+    }
+
+    .profile-metric{
+        padding: 10px;
+    }
+
+    .profile-metric__number{
+        font-size: 32px;
+    }
+
+    .profile-header{
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .profile-header-info{
+        width: 100%;
+    }
+
+    .profile-avatar{
+        width: 50%;
+    }
+
+    .profile-username{
+        font-size: 32px;
+    }
+    
+    .profile-header__metrics {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .profile-header__top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
+
+@media (max-width: 430px) {
+    .contact-url-input {
+        font-size: 13px;
+    }
+
+    .contact-field__label {
+        width: 68px;
+        font-size: 13px;
+    }
 }

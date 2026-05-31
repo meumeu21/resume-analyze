@@ -164,3 +164,32 @@
     font-weight: 600;
     color: #222;
 }
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+    .neuro-resume {
+        flex-direction: column;
+    }
+
+    .neuro-resume__right {
+        flex-direction: row;
+        flex-wrap: wrap;
+        min-width: unset;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .neuro-banner {
+        min-height: 280px;
+    }
+}
+
+@media (max-width: 600px) {
+    .neuro-banner {
+        min-height: 180px;
+    }
+
+    .neuro-top-btns {
+        gap: 8px;
+    }
+}

@@ -443,3 +443,74 @@
     border-radius: 999px;
     color: #666;
 }
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+    .project-header__top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .project-header__info {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .project-edit-buttons {
+        flex-wrap: wrap;
+    }
+
+    .project-nav {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .project-images {
+        grid-template-columns: 1fr;
+    }
+
+    .project-dates-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .project-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+@media (max-width: 600px) {
+    .project-h1 {
+        font-size: 24px;
+    }
+
+    .project-h2 {
+        font-size: 22px;
+    }
+
+    .project-header__bottom {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .instruments {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .project-ai-card {
+        padding: 16px;
+    }
+
+    .project-ai-card-title {
+        flex-wrap: wrap;
+    }
+
+    .project-ai-visibility {
+        margin-left: 0;
+        width: 100%;
+    }
+}

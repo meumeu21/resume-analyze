@@ -712,11 +712,11 @@ function Project() {
                 <span className="text bold">Описание от ИИ</span>
                 {aiSummary?.status === 'done' && (
                   <label className="project-ai-visibility">
-                    <span className="text">{aiSummary.isPublic ? 'публичное' : 'приватное'}</span>
+                    <span className="text">Приватное описание</span>
                     <input
                       type="checkbox"
                       className="project-checkbox"
-                      checked={aiSummary.isPublic}
+                      checked={!aiSummary.isPublic}
                       onChange={handleToggleAiVisibility}
                     />
                   </label>

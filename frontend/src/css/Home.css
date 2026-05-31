@@ -59,6 +59,7 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+    position: relative;
 }
 
 .daily-project__top {
@@ -88,7 +89,9 @@
 }
 
 .daily-project__link {
-    flex-shrink: 0;
+    position: absolute;
+    top: 36px;
+    right: 40px;
     background: #fff;
     color: #000;
 }
@@ -181,4 +184,68 @@
 .daily-project__ai-text--empty {
     color: #555;
     font-style: italic;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 900px) {
+    .home__banner {
+        min-height: 320px;
+        padding: 36px 0;
+    }
+
+    .home-banner__texts {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .home__sections {
+        gap: 50px;
+        padding: 50px 0 70px;
+    }
+
+    .daily-project {
+        padding: 24px 28px;
+    }
+
+    .daily-project__top {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .daily-project__link {
+        position: static;
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+    }
+
+    .daily-project__title {
+        font-size: 26px;
+    }
+}
+
+@media (max-width: 600px) {
+    .home__banner {
+        min-height: 220px;
+        padding: 24px 0;
+    }
+
+    .home__sections {
+        gap: 36px;
+        padding: 36px 0 50px;
+    }
+
+    .daily-project {
+        padding: 18px;
+        border-radius: 12px;
+    }
+
+    .daily-project__title {
+        font-size: 20px;
+    }
+
+    .daily-project__desc {
+        font-size: 16px;
+    }
 }

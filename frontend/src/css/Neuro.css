@@ -185,11 +185,13 @@
 }
 
 @media (max-width: 600px) {
-    .neuro-banner {
-        min-height: 180px;
-    }
-
     .neuro-top-btns {
         gap: 8px;
+    }
+
+    .neuro-banner {
+        background-image: url(../images/neuro-banner-mobile.jpg);
+        min-height: 550px;
+        width: 100%;
     }
 }

@@ -226,11 +226,6 @@
 }
 
 @media (max-width: 600px) {
-    .home__banner {
-        min-height: 220px;
-        padding: 24px 0;
-    }
-
     .home__sections {
         gap: 36px;
         padding: 36px 0 50px;
@@ -247,5 +242,13 @@
 
     .daily-project__desc {
         font-size: 16px;
+    }
+
+    .home__banner{
+        background-image: url(../images/home-banner-mobile.jpg);
+        min-height: 550px;
+        width: 100%;
+
+        padding: 24px 0;
     }
 }

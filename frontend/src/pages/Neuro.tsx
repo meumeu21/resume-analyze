@@ -310,14 +310,7 @@ function Neuro() {
                 >
                   Скачать резюме
                 </button>
-                <button
-                  className="button-light text"
-                  type="button"
-                  onClick={handleDownloadText}
-                  disabled={!canDownload}
-                >
-                  Скачать текст ИИ
-                </button>
+                
               </div>
             </div>
           </div>

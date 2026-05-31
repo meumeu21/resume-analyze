@@ -38,6 +38,12 @@ export const DEVELOPER_CATEGORIES = [
   'Архитектор / Tech Lead',
 ] as const;
 
+interface ResumeProject {
+  title: string;
+  description: string;
+  stack: string;
+}
+
 interface ResumeData {
   first_name: string;
   last_name: string;
@@ -45,7 +51,7 @@ interface ResumeData {
   about: string;
   hard_skills: string;
   soft_skills: string;
-  projects: string;
+  projects: ResumeProject[];
 }
 
 interface ImprovementRecommendation {
@@ -609,9 +615,9 @@ ${projectsText}
 - "last_name": фамилия (берёшь как есть)
 - "job_title": определи точную должность на английском (например: Frontend Developer, Full-Stack Engineer, Python Developer)
 - "about": 2-3 предложения — профессиональный summary. Расскажи кто этот разработчик, что умеет, чем ценен. Опирайся на навыки и проекты.
-- "hard_skills": 1-2 предложения про технические компетенции. Выдели главную экспертизу, покажи как навыки дополняют друг друга. Например: "Уверенное владение Python как основным языком разработки, дополненное знанием Java для enterprise-задач."
-- "soft_skills": 1-2 предложения, раскрывающие личные качества через их практическую ценность. Не просто перечисляй — объясняй зачем они важны.
-- "projects": для каждого публичного проекта — одна строка с переносом: "Название\\nОписание: что сделано, какую задачу решает, почему это круто. Стек: ...". Если проектов нет — пустая строка.
+- "hard_skills": 1-2 предложения про технические компетенции. Выдели главную экспертизу, покажи как навыки дополняют друг друга. Конкретные названия технологий оборачивай в **...** (например: "Уверенное владение **Python** как основным языком, дополненное знанием **Java**.")
+- "soft_skills": 1-2 предложения, раскрывающие личные качества через их практическую ценность. Не просто перечисляй — объясняй зачем они важны. Ключевые качества оборачивай в **...** (например: "**Системное мышление** помогает декомпозировать сложные задачи.").
+- "projects": массив объектов для каждого публичного проекта. Каждый объект содержит: "title" — название проекта, "description" — 1-2 предложения что сделано, какую задачу решает и почему это интересно, "stack" — технологии через запятую. Если проектов нет — пустой массив.
 
 Верни ТОЛЬКО JSON:
 {
@@ -621,11 +627,13 @@ ${projectsText}
   "about": "...",
   "hard_skills": "...",
   "soft_skills": "...",
-  "projects": "..."
+  "projects": [{"title": "...", "description": "...", "stack": "..."}]
 }`;
   }
 
   private formatResumeSummary(data: ResumeData): string {
+    const clean = (s: string) => s.replace(/\*\*([^*]+)\*\*/g, '$1');
+
     const lines: string[] = [];
     if (data.job_title) lines.push(data.job_title);
     if (data.first_name || data.last_name) lines.push(`${data.first_name} ${data.last_name}`.trim());
@@ -633,22 +641,27 @@ ${projectsText}
 
     if (data.about) {
       lines.push('О себе:');
-      lines.push(data.about);
+      lines.push(clean(data.about));
       lines.push('');
     }
     if (data.hard_skills) {
       lines.push('Инструменты:');
-      lines.push(data.hard_skills);
+      lines.push(clean(data.hard_skills));
       lines.push('');
     }
     if (data.soft_skills) {
       lines.push('Soft Skills:');
-      lines.push(data.soft_skills);
+      lines.push(clean(data.soft_skills));
       lines.push('');
     }
-    if (data.projects) {
+    if (data.projects?.length) {
       lines.push('Проекты:');
-      lines.push(data.projects);
+      for (const p of data.projects) {
+        lines.push(p.title);
+        if (p.description) lines.push(clean(p.description));
+        if (p.stack) lines.push(`Стек: ${clean(p.stack)}`);
+        lines.push('');
+      }
     }
 
     return lines.join('\n');

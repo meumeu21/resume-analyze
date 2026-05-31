@@ -19,6 +19,14 @@ import { VisualizationService } from '../visualization/visualization.service';
 
 type Doc = InstanceType<typeof PDFDocument>;
 
+const TYPE_LABELS: Record<string, string> = {
+  github: 'GitHub',
+  telegram: 'Telegram',
+  linkedin: 'LinkedIn',
+  website: 'Сайт',
+  other: 'Ссылка',
+};
+
 @Injectable()
 export class ExportService {
   private readonly fontRegular = path.join(process.cwd(), 'fonts', 'DejaVuSans.ttf');
@@ -69,7 +77,10 @@ export class ExportService {
 
     const data = report.rawResponse as unknown as {
       job_title: string;
-      about: string; projects: string;
+      about: string;
+      hard_skills: string;
+      soft_skills: string;
+      projects: Array<{ title: string; description: string; stack: string }>;
     };
 
     const [profile, contactLinks] = await Promise.all([
@@ -86,9 +97,9 @@ export class ExportService {
       firstName: profile?.nickname ?? '',
       jobTitle: data.job_title || '',
       about: data.about || '',
-      hardSkillNames: (profile?.hardSkills ?? []).map((s) => s.name),
-      softSkills: profile?.softSkills ?? [],
-      projects: data.projects || '',
+      hardSkills: data.hard_skills || '',
+      softSkills: data.soft_skills || '',
+      projects: Array.isArray(data.projects) ? data.projects : [],
       contactLinks: links,
     });
 
@@ -100,12 +111,12 @@ export class ExportService {
     firstName: string;
     jobTitle: string;
     about: string;
-    hardSkillNames: string[];
-    softSkills: string[];
-    projects: string;
+    hardSkills: string;
+    softSkills: string;
+    projects: Array<{ title: string; description: string; stack: string }>;
     contactLinks: ContactLink[];
   }): Buffer {
-    const { firstName, jobTitle, about, hardSkillNames, softSkills, projects, contactLinks } = params;
+    const { firstName, jobTitle, about, hardSkills, softSkills, projects, contactLinks } = params;
 
     const xmlEsc = (s: string) =>
       s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -126,63 +137,108 @@ export class ExportService {
     const textRun = (text: string, opts: { bold?: boolean; size?: number; color?: string } = {}) =>
       `<w:r><w:rPr>${rpr(opts)}</w:rPr><w:t xml:space="preserve">${xmlEsc(text)}</w:t></w:r>`;
 
-    const centeredPara = (content: string) =>
-      para(content, '<w:jc w:val="center"/><w:spacing w:after="80"/>');
+    const centeredPara = (content: string, spacingAttr = 'w:before="0" w:after="80"') =>
+      para(content, `<w:jc w:val="center"/><w:spacing ${spacingAttr}/>`);
 
     const sectionHeader = (title: string) =>
-      para(textRun(title, { bold: true, size: 26, color: '2C7BE5' }),
-        '<w:spacing w:before="240" w:after="80"/>' +
-        '<w:pBdr><w:bottom w:val="single" w:sz="4" w:space="1" w:color="DDDDDD"/></w:pBdr>');
+      para(
+        textRun(title, { bold: true, size: 24, color: '1e3a5f' }),
+        '<w:spacing w:before="320" w:after="120"/>' +
+        '<w:pBdr><w:bottom w:val="single" w:sz="8" w:space="1" w:color="2C7BE5"/></w:pBdr>',
+      );
 
-    const hyperlinkPara = (rId: string, url: string) =>
-      `<w:p><w:pPr><w:spacing w:before="0" w:after="60"/></w:pPr>` +
-      `<w:hyperlink r:id="${rId}" w:history="1">` +
-      `<w:r><w:rPr>${rpr({ size: 22, color: '0563C1' })}<w:u w:val="single"/></w:rPr>` +
-      `<w:t xml:space="preserve">${xmlEsc(url)}</w:t></w:r></w:hyperlink></w:p>`;
+    const bodyPara = (content: string) =>
+      para(content, '<w:spacing w:before="0" w:after="100"/>');
 
     const multiLinePara = (text: string, opts: Parameters<typeof textRun>[1] = {}) =>
-      text.split('\n').map((line) => para(textRun(line, opts))).join('');
+      text.split('\n')
+        .filter((line) => line.trim())
+        .map((line) => bodyPara(textRun(line, opts)))
+        .join('');
+
+    const boldRuns = (text: string, opts: { size?: number; color?: string } = {}) =>
+      text.split(/(\*\*[^*]+\*\*)/).map((part) =>
+        part.startsWith('**') && part.endsWith('**')
+          ? textRun(part.slice(2, -2), { ...opts, bold: true })
+          : textRun(part, opts),
+      ).join('');
+
+    const contactPara = (rId: string, label: string, url: string) =>
+      `<w:p><w:pPr><w:spacing w:before="0" w:after="80"/></w:pPr>` +
+      `<w:r><w:rPr>${rpr({ bold: true, size: 22, color: '1e3a5f' })}</w:rPr>` +
+      `<w:t xml:space="preserve">${xmlEsc(label)}  </w:t></w:r>` +
+      `<w:hyperlink r:id="${rId}" w:history="1">` +
+      `<w:r><w:rPr>${rpr({ size: 22, color: '2563EB' })}<w:u w:val="single"/></w:rPr>` +
+      `<w:t xml:space="preserve">${xmlEsc(url)}</w:t></w:r></w:hyperlink></w:p>`;
 
     const parts: string[] = [];
 
     // Name
-    parts.push(centeredPara(textRun(firstName || 'user', { bold: true, size: 52, color: '222222' })));
+    parts.push(centeredPara(
+      textRun(firstName || 'Пользователь', { bold: true, size: 56, color: '1e3a5f' }),
+      'w:before="0" w:after="100"',
+    ));
 
     // Job title
     if (jobTitle) {
-      parts.push(centeredPara(textRun(jobTitle, { size: 28, color: '2C7BE5' })));
+      parts.push(centeredPara(
+        textRun(jobTitle, { size: 28, color: '2C7BE5' }),
+        'w:before="0" w:after="60"',
+      ));
     }
 
-    // КОНТАКТЫ
+    // Header divider
+    parts.push(para('',
+      '<w:spacing w:before="120" w:after="120"/>' +
+      '<w:pBdr><w:bottom w:val="single" w:sz="12" w:space="1" w:color="2C7BE5"/></w:pBdr>',
+    ));
+
     if (contactLinks.length) {
       parts.push(sectionHeader('КОНТАКТЫ'));
       contactLinks.forEach((link, i) => {
-        parts.push(hyperlinkPara(`rId${10 + i}`, link.url));
+        const label = TYPE_LABELS[link.type] || link.type;
+        parts.push(contactPara(`rId${10 + i}`, label, link.url));
       });
     }
 
-    // О СЕБЕ
     if (about) {
       parts.push(sectionHeader('О СЕБЕ'));
       parts.push(multiLinePara(about));
     }
 
-    // ИНСТРУМЕНТЫ
-    if (hardSkillNames.length) {
+    if (hardSkills) {
       parts.push(sectionHeader('ИНСТРУМЕНТЫ'));
-      parts.push(para(textRun(hardSkillNames.join(', '))));
+      parts.push(bodyPara(boldRuns(hardSkills)));
     }
 
-    // SOFT-SKILLS
-    if (softSkills.length) {
-      parts.push(sectionHeader('SOFT-SKILLS'));
-      parts.push(para(textRun(softSkills.join(', '))));
+    if (softSkills) {
+      parts.push(sectionHeader('SOFT SKILLS'));
+      parts.push(bodyPara(boldRuns(softSkills)));
     }
 
-    // ПРОЕКТЫ
-    if (projects) {
+    if (projects.length) {
       parts.push(sectionHeader('ПРОЕКТЫ'));
-      parts.push(multiLinePara(projects));
+      projects.forEach((p, i) => {
+        if (i > 0) {
+          parts.push(para('',
+            '<w:spacing w:before="0" w:after="0"/>' +
+            '<w:pBdr><w:bottom w:val="single" w:sz="2" w:space="1" w:color="E5E7EB"/></w:pBdr>',
+          ));
+        }
+        parts.push(para(
+          textRun(p.title, { bold: true, size: 24, color: '1e3a5f' }),
+          '<w:spacing w:before="160" w:after="60"/>',
+        ));
+        if (p.description) {
+          parts.push(bodyPara(textRun(p.description, { size: 22, color: '444444' })));
+        }
+        if (p.stack) {
+          parts.push(bodyPara(
+            textRun('Стек: ', { bold: true, size: 20, color: '2C7BE5' }) +
+            boldRuns(p.stack, { size: 20, color: '2563EB' }),
+          ));
+        }
+      });
     }
 
     const hyperlinkRels = contactLinks.map((link, i) =>
@@ -296,20 +352,42 @@ export class ExportService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
 
       const { profile, contacts, projects } = data;
+      const PW = 595.28;
+      const MARGIN = 50;
+      const CW = PW - MARGIN * 2;
+
       const name = [profile.firstName, profile.lastName].filter(Boolean).join(' ')
         || profile.nickname;
+      const showNickname = !!(profile.nickname && name !== profile.nickname);
 
-      doc.font('Bold').fontSize(22).fillColor('#222222').text(name, { align: 'center' });
-      doc.font('Regular').fontSize(12).fillColor('#777777')
-        .text(`@${profile.nickname}`, { align: 'center' });
+      // ── Colored header ─────────────────────────────────────
+      const HEADER_H = 130;
+      doc.rect(0, 0, PW, HEADER_H).fill('#1e3a5f');
 
-      if (profile.activityField) {
-        doc.moveDown(0.3).font('Bold').fontSize(13).fillColor('#2c7be5')
-          .text(profile.activityField, { align: 'center' });
+      const linesInHeader =
+        1 + (showNickname ? 1 : 0) + (profile.activityField ? 1 : 0);
+      const lineH = 20;
+      let headerY = (HEADER_H - linesInHeader * lineH) / 2;
+
+      doc.font('Bold').fontSize(22).fillColor('#ffffff')
+        .text(name, MARGIN, headerY, { width: CW, align: 'center' });
+      headerY += lineH + 2;
+
+      if (showNickname) {
+        doc.font('Regular').fontSize(11).fillColor('#93c5fd')
+          .text(`@${profile.nickname}`, MARGIN, headerY, { width: CW, align: 'center' });
+        headerY += lineH;
       }
 
-      this.divider(doc);
+      if (profile.activityField) {
+        doc.font('Regular').fontSize(12).fillColor('#93c5fd')
+          .text(profile.activityField, MARGIN, headerY, { width: CW, align: 'center' });
+      }
 
+      // Reset cursor below header
+      doc.y = HEADER_H + 20;
+
+      // ── Content ────────────────────────────────────────────
       if (profile.bio) {
         this.section(doc, 'О себе');
         doc.font('Regular').fontSize(11).fillColor('#333333')
@@ -320,7 +398,7 @@ export class ExportService {
       if (profile.softSkills.length) {
         this.section(doc, 'Soft skills');
         doc.font('Regular').fontSize(10).fillColor('#333333')
-          .text(profile.softSkills.join('  •  '));
+          .text(profile.softSkills.join('  ·  '));
         doc.moveDown(0.8);
       }
 
@@ -359,9 +437,11 @@ export class ExportService {
       if (contacts.length) {
         this.section(doc, 'Контакты');
         for (const c of contacts) {
-          doc.font('Regular').fontSize(10).fillColor('#333333')
-            .text(`${c.type}: `, { continued: true })
-            .fillColor('#2c7be5').text(c.url);
+          const label = TYPE_LABELS[c.type] || c.type;
+          doc.font('Bold').fontSize(10).fillColor('#1e3a5f')
+            .text(`${label}   `, { continued: true })
+            .font('Regular').fillColor('#2563eb')
+            .text(c.url, { link: c.url, underline: true });
         }
         doc.moveDown(0.8);
       }
@@ -371,7 +451,7 @@ export class ExportService {
       if (projects.length) {
         this.section(doc, 'Проекты');
         for (const p of projects) {
-          doc.font('Bold').fontSize(12).fillColor('#222222').text(p.title);
+          doc.font('Bold').fontSize(12).fillColor('#1e3a5f').text(p.title);
 
           if (p.description) {
             doc.font('Regular').fontSize(10).fillColor('#444444')
@@ -381,11 +461,11 @@ export class ExportService {
           const meta: string[] = [];
           if (p.role) meta.push(`Роль: ${p.role}`);
           if (meta.length) {
-            doc.font('Regular').fontSize(9).fillColor('#888888').text(meta.join('  •  '));
+            doc.font('Regular').fontSize(9).fillColor('#888888').text(meta.join('  ·  '));
           }
 
           if (p.stack.length) {
-            doc.font('Regular').fontSize(9).fillColor('#2c7be5')
+            doc.font('Regular').fontSize(9).fillColor('#2563eb')
               .text(`Стек: ${p.stack.join(', ')}`);
           }
 
@@ -395,7 +475,8 @@ export class ExportService {
           }
 
           if (p.repoUrl) {
-            doc.font('Regular').fontSize(9).fillColor('#2c7be5').text(p.repoUrl);
+            doc.font('Regular').fontSize(9).fillColor('#2563eb')
+              .text(p.repoUrl, { link: p.repoUrl, underline: true });
           }
 
           doc.moveDown(0.7);
@@ -474,8 +555,10 @@ export class ExportService {
   }
 
   private section(doc: Doc, title: string) {
-    doc.font('Bold').fontSize(13).fillColor('#2c7be5').text(title.toUpperCase());
-    doc.moveDown(0.3);
+    doc.moveDown(0.5);
+    doc.font('Bold').fontSize(12).fillColor('#1e3a5f').text(title.toUpperCase());
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#2C7BE5').lineWidth(1.5).stroke();
+    doc.moveDown(0.5);
   }
 
   private templateRow(doc: Doc, label: string) {

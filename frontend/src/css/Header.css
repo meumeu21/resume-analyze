@@ -62,6 +62,26 @@ nav {
     flex-shrink: 0;
 }
 
+/* Нейросеть — animated gradient */
+.header__menu-item.special {
+    background: linear-gradient(90deg, #ECEBFF, #FAE2FF, #BEEBFF, #FFE6BD, #ECEBFF);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: header-gradient 5s linear infinite;
+}
+
+.header__menu-item.special:hover {
+    text-decoration: underline;
+    text-decoration-color: #FAE2FF;
+}
+
+@keyframes header-gradient {
+    0%   { background-position: 300% center; }
+    100% { background-position: 0% center; }
+}
+
 /* Burger button — hidden on desktop */
 .header__burger {
     display: none;

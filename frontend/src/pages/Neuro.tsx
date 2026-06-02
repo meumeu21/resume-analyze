@@ -8,7 +8,6 @@ import {
   getMyReports,
   getReport,
   downloadResumeDocx,
-  downloadTextDocx,
 } from '../api/ai';
 import type { AiReport, ImprovementsData } from '../api/ai';
 
@@ -156,16 +155,6 @@ function Neuro() {
     setDownloadError(null);
     try {
       await downloadResumeDocx(accessToken, resumeReport.id);
-    } catch (e) {
-      setDownloadError(e instanceof Error ? e.message : 'Ошибка скачивания');
-    }
-  }
-
-  async function handleDownloadText() {
-    if (!accessToken || !resumeReport || resumeReport.status !== 'done') return;
-    setDownloadError(null);
-    try {
-      await downloadTextDocx(accessToken, resumeReport.id);
     } catch (e) {
       setDownloadError(e instanceof Error ? e.message : 'Ошибка скачивания');
     }

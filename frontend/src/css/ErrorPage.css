@@ -1,0 +1,48 @@
+.error-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-height: 60vh;
+    gap: 16px;
+}
+
+.error-page__code {
+    font-size: 160px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -4px;
+}
+
+.error-page__title {
+    font-size: 32px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.error-page__description {
+    color: #666;
+    max-width: 400px;
+}
+
+@media (max-width: 576px) {
+    .error-page__code {
+        font-size: 100px;
+        letter-spacing: -2px;
+    }
+
+    .error-page__title {
+        font-size: 24px;
+    }
+}
+
+@media (max-width: 430px) {
+    .error-page__code {
+        font-size: 80px;
+    }
+
+    .error-page__title {
+        font-size: 20px;
+    }
+}

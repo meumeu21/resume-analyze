@@ -12,6 +12,7 @@ import {
   addFavorite, removeFavorite, fetchProjectGithubData, deleteProject,
 } from "../api/projects";
 import type { ProjectResponse } from "../api/projects";
+import { ApiError } from "../api/client";
 import { getUserProfile } from "../api/users";
 import { getGithubAccount } from "../api/github";
 import type { GithubRepoData } from "../api/github";
@@ -85,7 +86,11 @@ function Project() {
         setIsFavorited(p.isFavorited);
         setFavCount(p.favoritesCount);
       })
-      .catch((e: Error) => setLoadError(e.message));
+      .catch((e: unknown) => {
+        if (e instanceof ApiError && e.status === 404) navigate('/404', { replace: true });
+        else if (e instanceof ApiError && e.status >= 500) navigate('/500', { replace: true });
+        else setLoadError(e instanceof Error ? e.message : 'Ошибка загрузки');
+      });
   }, [id, accessToken]);
 
   useEffect(() => {
@@ -712,11 +717,11 @@ function Project() {
                 <span className="text bold">Описание от ИИ</span>
                 {aiSummary?.status === 'done' && (
                   <label className="project-ai-visibility">
-                    <span className="text">{aiSummary.isPublic ? 'публичное' : 'приватное'}</span>
+                    <span className="text">Приватное описание</span>
                     <input
                       type="checkbox"
                       className="project-checkbox"
-                      checked={aiSummary.isPublic}
+                      checked={!aiSummary.isPublic}
                       onChange={handleToggleAiVisibility}
                     />
                   </label>

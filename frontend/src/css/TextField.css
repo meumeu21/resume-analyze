@@ -9,26 +9,34 @@
 }
 
 .textField-button {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: none;
   border-radius: 50%;
-  background: #f2f2f2;
+  background: #000;
+  color: #fff;
   cursor: pointer;
-  font-size: 18px;
-  transition: 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.3s, background 0.2s;
+}
+
+.textField-button svg {
+  width: 18px;
+  height: 18px;
 }
 
 .textField-button:hover {
-  background: #e0e0e0;
+  background: #333;
 }
 
 .textField-button.open {
-  transform: rotate(180deg);
+  transform: rotate(90deg);
 }
 
 .textField-content {
-  margin-top: 15px;
   padding: 20px;
 
   border: 1px solid #000;
@@ -52,12 +60,13 @@
 .textField-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin-left: auto;
 }
 
 .textField-textarea {
   width: 100%;
+  box-sizing: border-box;
   min-height: 120px;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -65,4 +74,9 @@
   resize: vertical;
   font-size: 14px;
   margin-bottom: 10px;
+}
+
+.profile-h2{
+  margin: 0;
+  margin: 15px 0;
 }

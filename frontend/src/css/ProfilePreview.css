@@ -60,3 +60,46 @@
     flex-direction: row;
     gap: 20px;
 }
+
+/* ─── Responsive ─── */
+@media (max-width: 1199.98px) {
+    .profile-preview {
+        flex-direction: column !important;
+        align-items: flex-start;
+        gap: 20px;
+        box-sizing: border-box;
+    }
+
+    .profile-preview__data {
+        width: 100%;
+    }
+
+    .profile-preview > .button {
+        width: 100%;
+        box-sizing: border-box;
+        text-align: center;
+    }
+}
+
+@media (max-width: 600px) {
+    .profile-preview__avatar {
+        width: 70px;
+        height: 70px;
+    }
+
+    .profile-preview__numbers-data {
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 576px){
+    .profile-preview__data{
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .profile-preview{
+        padding: 10px;
+    }
+}

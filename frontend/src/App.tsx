@@ -12,6 +12,7 @@ import Project from './pages/Project';
 import Developers from './pages/Developers';
 import Home from './pages/Home';
 import Neuro from './pages/Neuro';
+import ErrorPage from './pages/ErrorPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { accessToken, isLoading } = useAuth();
@@ -44,6 +45,9 @@ function AppRoutes() {
       <Route path="/projects/:id" element={<Project />} />
       <Route path="/developers" element={<Developers />} />
       <Route path="/neuro" element={<Neuro />} />
+      <Route path="/404" element={<ErrorPage code={404} />} />
+      <Route path="/500" element={<ErrorPage code={500} />} />
+      <Route path="*" element={<ErrorPage code={404} />} />
     </Routes>
   );
 }

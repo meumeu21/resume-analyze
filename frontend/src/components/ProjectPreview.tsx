@@ -15,7 +15,7 @@ function ProjectPreview({ title, description, author, color, link, isFavorited, 
     return (
         <div className="project-preview" style={{ backgroundColor: color }}>
             <div className="project-preview__wrap">
-                <h3 className="project-preview__title text">{title}</h3>
+                <h3 className="project-preview__title">{title}</h3>
                 <p className="project-preview__description text">{description}</p>
                 {author && <p className="project-preview__author text">{author}</p>}
             </div>

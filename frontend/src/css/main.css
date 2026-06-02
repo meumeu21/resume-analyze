@@ -36,8 +36,10 @@ p {
 }
 
 .container{
-    width: 1380px;
+    max-width: 1380px;
+    width: 100%;
     margin: 0 auto;
+    box-sizing: border-box;
 }
 
 .page{
@@ -109,11 +111,14 @@ p {
     align-items: center;
 
     padding: 20px;
+    box-sizing: border-box;
 
     border: 1px solid #000;
     border-radius: 10px;
 
     margin-bottom: 10px;
+
+    gap: 20px;
 }
 
 .project-preview__actions {
@@ -126,10 +131,27 @@ p {
 .project-preview__wrap{
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 0;
+    flex: 1;
+    min-width: 0;
 }
 
 .project-preview__title{
+    font-weight: 600;
+    margin-bottom: 15px;
+
+    font-size: 24px;
+}
+
+.project-preview__description {
+    margin: 0 0 14px 0;
+}
+
+.project-preview__author {
+    font-size: 15px;
+    color: #555;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    padding-top: 10px;
     margin: 0;
 }
 
@@ -150,4 +172,91 @@ p {
     padding-top: 30px;
 
     margin-top: 30px;
+}
+
+@media (max-width: 1399.98px) {
+    .container {
+        max-width: 1100px;
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .container {
+        max-width: none;
+        width: auto;
+        margin: 0 30px;
+    }
+    .page {
+        margin-top: 20px;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .text {
+        font-size: 16px;
+    }
+
+    .project-preview{
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .project-preview__actions, .project-preview__actions a, .project-preview__wrap {
+        width: 100%;
+    }
+
+    .project-preview__actions a {
+        
+        text-align: center;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .container {
+        margin: 0 10px;
+    }
+}
+
+@media (max-width: 900px) {
+    
+    
+    .page-h1 {
+        font-size: 28px;
+    }
+    .project-preview {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .project-preview__actions {
+        align-self: flex-end;
+    }
+}
+
+@media (max-width: 600px) {
+    
+    .page {
+        margin-top: 16px;
+    }
+    .text {
+        font-size: 17px;
+    }
+    .page-h1 {
+        font-size: 24px;
+    }
+    .button,
+    .button-light {
+        padding: 9px 22px;
+    }
+    .footer {
+        height: auto;
+        padding: 16px 0;
+    }
+}
+
+@media (max-width: 430px) {
+    .github-connected__actions {
+        flex-direction: column;
+        gap: 10px;
+    }
 }

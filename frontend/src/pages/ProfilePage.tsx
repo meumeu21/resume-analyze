@@ -135,6 +135,9 @@ function ProfilePage() {
   const [githubConnecting, setGithubConnecting] = useState(false);
   const [githubSyncing, setGithubSyncing] = useState(false);
 
+  const [chartsOpen, setChartsOpen] = useState(true);
+  const [projectsOpen, setProjectsOpen] = useState(true);
+
   useEffect(() => {
     if (isOwn && !isLoading && !accessToken) {
       navigate('/login', { replace: true });
@@ -728,72 +731,98 @@ function ProfilePage() {
                     onSave={handleBioSave}
                   />
                 )}
-                <div className={`profile-charts-grid profile-charts-grid--${ownGridCount}`}>
-                  {(isEditing || ownHasNetwork) && (
-                    <div className="profile-chart-cell">
-                      {ownHasNetwork && <NetworkGraphChart data={myProfile!.networkGraph!} />}
-                      {isEditing && (
-                        <div className="coordinates-actions">
-                          <button className="button-light text" onClick={handleBuildNetworkGraph} disabled={networkGraphLoading}>
-                            {networkGraphLoading ? 'Анализ...' : ownHasNetwork ? 'Перегенерировать граф' : 'Построить граф технологий'}
-                          </button>
-                          {ownHasNetwork && <button className="button-light text" onClick={handleDeleteNetworkGraph}>Удалить граф</button>}
-                          {networkGraphError && <p className="error-text text">{networkGraphError}</p>}
-                        </div>
-                      )}
+                <div className="textField">
+                  <div className="textField-header">
+                    <h2 className="profile-h2">Графики</h2>
+                    <div className="textField-actions">
+                      <button
+                        className={`textField-button ${chartsOpen ? 'open' : ''}`}
+                        onClick={() => setChartsOpen((o) => !o)}
+                      >▼</button>
                     </div>
-                  )}
-                  {(isEditing || ownHasSkill) && (
-                    <div className="profile-chart-cell">
-                      {ownHasSkill && <SkillMapChart skills={myProfile!.skillMap!} />}
-                      {isEditing && (
-                        <div className="coordinates-actions">
-                          <button className="button-light text" onClick={handleBuildSkillMap} disabled={skillMapLoading}>
-                            {skillMapLoading ? 'Анализ...' : ownHasSkill ? 'Перегенерировать карту' : 'Построить карту навыков'}
-                          </button>
-                          {ownHasSkill && <button className="button-light text" onClick={handleDeleteSkillMap}>Удалить карту</button>}
-                          {skillMapError && <p className="error-text text">{skillMapError}</p>}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {(isEditing || ownHasCoords) && (
-                    <div className="profile-chart-cell">
-                      {ownHasCoords && <CoordinatesChart x={myProfile!.coordinates!.x} y={myProfile!.coordinates!.y} />}
-                      {isEditing && (
-                        <div className="coordinates-actions">
-                          <button className="button-light text" onClick={handleBuildCoordinates} disabled={coordinatesLoading}>
-                            {coordinatesLoading ? 'Анализ...' : ownHasCoords ? 'Перегенерировать' : 'Построить график'}
-                          </button>
-                          {ownHasCoords && <button className="button-light text" onClick={handleDeleteCoordinates}>Удалить график</button>}
-                          {coordinatesError && <p className="error-text text">{coordinatesError}</p>}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className="profile-chart-cell profile-chart-cell--activity">
-                    <ActivityChart projects={myProfile?.projects ?? []} />
                   </div>
+                  {chartsOpen && (
+                    <div className={`profile-charts-grid profile-charts-grid--${ownGridCount}`}>
+                      {(isEditing || ownHasNetwork) && (
+                        <div className="profile-chart-cell">
+                          {ownHasNetwork && <NetworkGraphChart data={myProfile!.networkGraph!} />}
+                          {isEditing && (
+                            <div className="coordinates-actions">
+                              <button className="button-light text" onClick={handleBuildNetworkGraph} disabled={networkGraphLoading}>
+                                {networkGraphLoading ? 'Анализ...' : ownHasNetwork ? 'Перегенерировать граф' : 'Построить граф технологий'}
+                              </button>
+                              {ownHasNetwork && <button className="button-light text" onClick={handleDeleteNetworkGraph}>Удалить граф</button>}
+                              {networkGraphError && <p className="error-text text">{networkGraphError}</p>}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {(isEditing || ownHasSkill) && (
+                        <div className="profile-chart-cell">
+                          {ownHasSkill && <SkillMapChart skills={myProfile!.skillMap!} />}
+                          {isEditing && (
+                            <div className="coordinates-actions">
+                              <button className="button-light text" onClick={handleBuildSkillMap} disabled={skillMapLoading}>
+                                {skillMapLoading ? 'Анализ...' : ownHasSkill ? 'Перегенерировать карту' : 'Построить карту навыков'}
+                              </button>
+                              {ownHasSkill && <button className="button-light text" onClick={handleDeleteSkillMap}>Удалить карту</button>}
+                              {skillMapError && <p className="error-text text">{skillMapError}</p>}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {(isEditing || ownHasCoords) && (
+                        <div className="profile-chart-cell">
+                          {ownHasCoords && <CoordinatesChart x={myProfile!.coordinates!.x} y={myProfile!.coordinates!.y} />}
+                          {isEditing && (
+                            <div className="coordinates-actions">
+                              <button className="button-light text" onClick={handleBuildCoordinates} disabled={coordinatesLoading}>
+                                {coordinatesLoading ? 'Анализ...' : ownHasCoords ? 'Перегенерировать' : 'Построить график'}
+                              </button>
+                              {ownHasCoords && <button className="button-light text" onClick={handleDeleteCoordinates}>Удалить график</button>}
+                              {coordinatesError && <p className="error-text text">{coordinatesError}</p>}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <div className="profile-chart-cell profile-chart-cell--activity">
+                        <ActivityChart projects={myProfile?.projects ?? []} />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="profile-content__projects-container">
-                  {(myProfile?.projects ?? []).map((p, i) => (
-                    <ProjectPreview
-                      key={p.id}
-                      title={p.title}
-                      description={p.description ?? ''}
-                      author={nickname}
-                      color={CARD_COLORS[i % CARD_COLORS.length]}
-                      link={`/projects/${p.id}`}
-                    />
-                  ))}
-                  <button
-                    className="button-light text"
-                    onClick={handleCreateProject}
-                    disabled={creatingProject}
-                  >
-                    {creatingProject ? 'Создание...' : '+ Добавить новый проект'}
-                  </button>
+                <div className="textField">
+                  <div className="textField-header">
+                    <h2 className="profile-h2">Проекты</h2>
+                    <div className="textField-actions">
+                      <button
+                        className={`textField-button ${projectsOpen ? 'open' : ''}`}
+                        onClick={() => setProjectsOpen((o) => !o)}
+                      >▼</button>
+                    </div>
+                  </div>
+                  {projectsOpen && (
+                    <div className="profile-content__projects-container">
+                      {(myProfile?.projects ?? []).map((p, i) => (
+                        <ProjectPreview
+                          key={p.id}
+                          title={p.title}
+                          description={p.description ?? ''}
+                          author={nickname}
+                          color={CARD_COLORS[i % CARD_COLORS.length]}
+                          link={`/projects/${p.id}`}
+                        />
+                      ))}
+                      <button
+                        className="button-light text"
+                        onClick={handleCreateProject}
+                        disabled={creatingProject}
+                      >
+                        {creatingProject ? 'Создание...' : '+ Добавить новый проект'}
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <TextField
                   title="Soft Skills"
@@ -860,40 +889,66 @@ function ProfilePage() {
             ) : (
               <>
                 {otherProfile?.bio && <TextField title="Обо мне" text={otherProfile.bio} />}
-                <div className={`profile-charts-grid profile-charts-grid--${otherAiCount}`}>
-                  {otherHasNetwork && (
-                    <div className="profile-chart-cell">
-                      <NetworkGraphChart data={otherProfile!.networkGraph!} />
+                <div className="textField">
+                  <div className="textField-header">
+                    <h2 className="profile-h2">Графики</h2>
+                    <div className="textField-actions">
+                      <button
+                        className={`textField-button ${chartsOpen ? 'open' : ''}`}
+                        onClick={() => setChartsOpen((o) => !o)}
+                      >▼</button>
                     </div>
-                  )}
-                  {otherHasSkill && (
-                    <div className="profile-chart-cell">
-                      <SkillMapChart skills={otherProfile!.skillMap!} />
-                    </div>
-                  )}
-                  {otherHasCoords && (
-                    <div className="profile-chart-cell">
-                      <CoordinatesChart x={otherProfile!.coordinates!.x} y={otherProfile!.coordinates!.y} />
-                    </div>
-                  )}
-                  <div className="profile-chart-cell profile-chart-cell--activity">
-                    <ActivityChart projects={otherProfile?.publicProjects ?? []} />
                   </div>
+                  {chartsOpen && (
+                    <div className={`profile-charts-grid profile-charts-grid--${otherAiCount}`}>
+                      {otherHasNetwork && (
+                        <div className="profile-chart-cell">
+                          <NetworkGraphChart data={otherProfile!.networkGraph!} />
+                        </div>
+                      )}
+                      {otherHasSkill && (
+                        <div className="profile-chart-cell">
+                          <SkillMapChart skills={otherProfile!.skillMap!} />
+                        </div>
+                      )}
+                      {otherHasCoords && (
+                        <div className="profile-chart-cell">
+                          <CoordinatesChart x={otherProfile!.coordinates!.x} y={otherProfile!.coordinates!.y} />
+                        </div>
+                      )}
+                      <div className="profile-chart-cell profile-chart-cell--activity">
+                        <ActivityChart projects={otherProfile?.publicProjects ?? []} />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {(otherProfile?.publicProjects ?? []).length > 0 && (
-                  <div className="profile-content__projects-container">
-                    {(otherProfile?.publicProjects ?? []).map((p, i) => (
-                      <ProjectPreview
-                        key={p.id}
-                        title={p.title}
-                        description={p.description ?? ''}
-                        author={otherProfile?.nickname ?? ''}
-                        color={CARD_COLORS[i % CARD_COLORS.length]}
-                        link={`/projects/${p.id}`}
-                        isFavorited={favoritedIds.has(p.id)}
-                        onToggleFavorite={accessToken ? (e) => handleToggleFavorite(e, p.id) : undefined}
-                      />
-                    ))}
+                  <div className="textField">
+                    <div className="textField-header">
+                      <h2 className="profile-h2">Проекты</h2>
+                      <div className="textField-actions">
+                        <button
+                          className={`textField-button ${projectsOpen ? 'open' : ''}`}
+                          onClick={() => setProjectsOpen((o) => !o)}
+                        >▼</button>
+                      </div>
+                    </div>
+                    {projectsOpen && (
+                      <div className="profile-content__projects-container">
+                        {(otherProfile?.publicProjects ?? []).map((p, i) => (
+                          <ProjectPreview
+                            key={p.id}
+                            title={p.title}
+                            description={p.description ?? ''}
+                            author={otherProfile?.nickname ?? ''}
+                            color={CARD_COLORS[i % CARD_COLORS.length]}
+                            link={`/projects/${p.id}`}
+                            isFavorited={favoritedIds.has(p.id)}
+                            onToggleFavorite={accessToken ? (e) => handleToggleFavorite(e, p.id) : undefined}
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
                 {softSkillsText && <TextField title="Soft Skills" text={softSkillsText} />}

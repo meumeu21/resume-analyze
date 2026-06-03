@@ -20,12 +20,9 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  font-size: 14px;
+  transform: rotate(180deg);
   transition: transform 0.3s, background 0.2s;
-}
-
-.textField-button svg {
-  width: 18px;
-  height: 18px;
 }
 
 .textField-button:hover {
@@ -33,7 +30,7 @@
 }
 
 .textField-button.open {
-  transform: rotate(90deg);
+  transform: rotate(0deg);
 }
 
 .textField-content {

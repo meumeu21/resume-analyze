@@ -138,6 +138,9 @@ function Project() {
     setAiGenerating(true);
     setAiError('');
     try {
+      if (isEditing) {
+        await saveCurrentData();
+      }
       const report = await generateReport(accessToken, 'project_summary', id);
       setAiSummary(report);
     } catch (e) {
@@ -228,19 +231,47 @@ function Project() {
     } catch { setDeleting(false); }
   }
 
-  function handleRepoSelect(repoId: string) {
+  async function handleRepoSelect(repoId: string) {
     setSelectedRepoId(repoId || null);
-    if (!repoId) return;
+    if (!repoId || !id || !accessToken) return;
     const repo = githubRepos.find((r) => r.id === repoId);
     if (!repo) return;
-    setTitleInput(repo.name);
-    setDescInput(repo.description ?? '');
-    setStackItems(Object.keys(repo.languages));
-    setRepoUrlInput(repo.url);
+
+    const newTitle = repo.name;
+    const newDesc = repo.description ?? '';
+    const newStack = Object.keys(repo.languages);
+    const newRepoUrl = repo.url;
+
+    setTitleInput(newTitle);
+    setDescInput(newDesc);
+    setStackItems(newStack);
+    setRepoUrlInput(newRepoUrl);
+
+    setSaving(true);
+    setSaveError('');
+    try {
+      await updateProject(id, accessToken, {
+        title: newTitle || undefined,
+        description: newDesc || undefined,
+        stack: newStack,
+        repoUrl: newRepoUrl || undefined,
+        isPublic: isPublicInput,
+        demoUrl: demoUrlInput.trim() || undefined,
+      });
+      await fetchProjectGithubData(id, accessToken).catch(() => {});
+      const fresh = await getProject(id, accessToken);
+      setProject(fresh);
+      setIsFavorited(fresh.isFavorited);
+      setFavCount(fresh.favoritesCount);
+    } catch (e: unknown) {
+      if (e instanceof Error) setSaveError(e.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
-  async function handleSave() {
-    if (!id || !accessToken) return;
+  async function saveCurrentData(): Promise<boolean> {
+    if (!id || !accessToken) return false;
     setSaving(true);
     setSaveError('');
     try {
@@ -269,12 +300,18 @@ function Project() {
       setProject(fresh);
       setIsFavorited(fresh.isFavorited);
       setFavCount(fresh.favoritesCount);
-      setIsEditing(false);
+      return true;
     } catch (e: unknown) {
       if (e instanceof Error) setSaveError(e.message);
+      return false;
     } finally {
       setSaving(false);
     }
+  }
+
+  async function handleSave() {
+    const ok = await saveCurrentData();
+    if (ok) setIsEditing(false);
   }
 
   function commitStackInput() {

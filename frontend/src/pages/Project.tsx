@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import "../css/main.css";
 import "../css/Project.css";
@@ -21,12 +21,8 @@ import {
   getPublicProjectSummary, toggleReportVisibility,
 } from "../api/ai";
 import type { AiReport } from "../api/ai";
-
-import github from "../images/icons/github.svg";
-import aiStar from "../images/icons/ai-star.svg";
-import GithubFileBrowser from "../components/GithubFileBrowser";
-import likeEmpty from "../images/icons/heart-empty.svg";
-import likeFill from "../images/icons/heart-fill.svg";
+import ProjectEditor from "../components/ProjectEditor";
+import ProjectView from "../components/ProjectView";
 
 type Tab = 'manual' | 'github';
 
@@ -50,10 +46,8 @@ function Project() {
   const [stackItems, setStackItems] = useState<string[]>([]);
   const [isPublicInput, setIsPublicInput] = useState(false);
   const [demoUrlInput, setDemoUrlInput] = useState('');
-
   const [startedAtInput, setStartedAtInput] = useState('');
   const [finishedAtInput, setFinishedAtInput] = useState('');
-
   const [repoUrlInput, setRepoUrlInput] = useState('');
   const [githubRepos, setGithubRepos] = useState<GithubRepoData[]>([]);
   const [githubReposLoading, setGithubReposLoading] = useState(false);
@@ -81,11 +75,7 @@ function Project() {
     if (!id) return;
     setLoadError(null);
     getProject(id, accessToken)
-      .then((p) => {
-        setProject(p);
-        setIsFavorited(p.isFavorited);
-        setFavCount(p.favoritesCount);
-      })
+      .then((p) => { setProject(p); setIsFavorited(p.isFavorited); setFavCount(p.favoritesCount); })
       .catch((e: unknown) => {
         if (e instanceof ApiError && e.status === 404) navigate('/404', { replace: true });
         else if (e instanceof ApiError && e.status >= 500) navigate('/500', { replace: true });
@@ -96,12 +86,9 @@ function Project() {
   useEffect(() => {
     if (!project?.userId) return;
     if (user?.id === project.userId && user.profile?.nickname) {
-      setAuthorNickname(user.profile.nickname);
-      return;
+      setAuthorNickname(user.profile.nickname); return;
     }
-    getUserProfile(project.userId, accessToken)
-      .then((p) => setAuthorNickname(p.nickname))
-      .catch(() => {});
+    getUserProfile(project.userId, accessToken).then((p) => setAuthorNickname(p.nickname)).catch(() => {});
   }, [project?.userId, user?.id]);
 
   useEffect(() => {
@@ -118,12 +105,7 @@ function Project() {
     let pollCount = 0;
     const interval = setInterval(async () => {
       pollCount += 1;
-      if (pollCount > 40) {
-        clearInterval(interval);
-        setAiSummary(null);
-        setAiError('Генерация не завершилась. Попробуйте ещё раз.');
-        return;
-      }
+      if (pollCount > 40) { clearInterval(interval); setAiSummary(null); setAiError('Генерация не завершилась. Попробуйте ещё раз.'); return; }
       try {
         const updated = await getReport(accessToken, aiSummary.id);
         setAiSummary(updated);
@@ -133,35 +115,9 @@ function Project() {
     return () => clearInterval(interval);
   }, [aiSummary?.id, aiSummary?.status, accessToken]);
 
-  async function handleGenerateAiSummary() {
-    if (!id || !accessToken) return;
-    setAiGenerating(true);
-    setAiError('');
-    try {
-      if (isEditing) {
-        await saveCurrentData();
-      }
-      const report = await generateReport(accessToken, 'project_summary', id);
-      setAiSummary(report);
-    } catch (e) {
-      setAiError(e instanceof Error ? e.message : 'Ошибка генерации');
-    } finally {
-      setAiGenerating(false);
-    }
-  }
-
-  async function handleToggleAiVisibility() {
-    if (!aiSummary || !accessToken) return;
-    try {
-      const updated = await toggleReportVisibility(accessToken, aiSummary.id);
-      setAiSummary(updated);
-    } catch {}
-  }
-
   function fetchGithubRepos() {
     if (!accessToken) return;
-    setGithubReposLoading(true);
-    setGithubReposError('');
+    setGithubReposLoading(true); setGithubReposError('');
     getGithubAccount(accessToken)
       .then((account) => {
         const repos = [...account.repos];
@@ -169,25 +125,17 @@ function Project() {
           const inList = repos.some((r) => r.id === project.githubRepoId);
           if (!inList) {
             repos.push({
-              id: project.githubRepoId,
-              githubRepoId: 0,
-              name: project.title,
-              description: project.description,
-              url: project.repoUrl ?? '',
-              languages: {},
-              topics: project.githubRepo.topics,
-              starsCount: project.githubRepo.starsCount,
-              readmeExcerpt: null,
+              id: project.githubRepoId, githubRepoId: 0, name: project.title,
+              description: project.description, url: project.repoUrl ?? '',
+              languages: {}, topics: project.githubRepo.topics,
+              starsCount: project.githubRepo.starsCount, readmeExcerpt: null,
             });
           }
         }
         setGithubRepos(repos);
       })
       .catch((e: Error) => setGithubReposError(e.message))
-      .finally(() => {
-        setGithubReposLoading(false);
-        setGithubFetchDone(true);
-      });
+      .finally(() => { setGithubReposLoading(false); setGithubFetchDone(true); });
   }
 
   useEffect(() => {
@@ -214,21 +162,15 @@ function Project() {
   }
 
   function cancelEditing() {
-    setIsEditing(false);
-    setSaveError('');
-    if (githubReposError) {
-      setGithubFetchDone(false);
-      setGithubReposError('');
-    }
+    setIsEditing(false); setSaveError('');
+    if (githubReposError) { setGithubFetchDone(false); setGithubReposError(''); }
   }
 
   async function handleDelete() {
     if (!id || !accessToken) return;
     setDeleting(true);
-    try {
-      await deleteProject(id, accessToken);
-      navigate('/users/me');
-    } catch { setDeleting(false); }
+    try { await deleteProject(id, accessToken); navigate('/users/me'); }
+    catch { setDeleting(false); }
   }
 
   async function handleRepoSelect(repoId: string) {
@@ -236,77 +178,45 @@ function Project() {
     if (!repoId || !id || !accessToken) return;
     const repo = githubRepos.find((r) => r.id === repoId);
     if (!repo) return;
-
-    const newTitle = repo.name;
-    const newDesc = repo.description ?? '';
-    const newStack = Object.keys(repo.languages);
-    const newRepoUrl = repo.url;
-
-    setTitleInput(newTitle);
-    setDescInput(newDesc);
-    setStackItems(newStack);
-    setRepoUrlInput(newRepoUrl);
-
-    setSaving(true);
-    setSaveError('');
+    setTitleInput(repo.name); setDescInput(repo.description ?? '');
+    setStackItems(Object.keys(repo.languages)); setRepoUrlInput(repo.url);
+    setSaving(true); setSaveError('');
     try {
       await updateProject(id, accessToken, {
-        title: newTitle || undefined,
-        description: newDesc || undefined,
-        stack: newStack,
-        repoUrl: newRepoUrl || undefined,
-        isPublic: isPublicInput,
-        demoUrl: demoUrlInput.trim() || undefined,
+        title: repo.name || undefined, description: repo.description || undefined,
+        stack: Object.keys(repo.languages), repoUrl: repo.url || undefined,
+        isPublic: isPublicInput, demoUrl: demoUrlInput.trim() || undefined,
       });
       await fetchProjectGithubData(id, accessToken).catch(() => {});
       const fresh = await getProject(id, accessToken);
-      setProject(fresh);
-      setIsFavorited(fresh.isFavorited);
-      setFavCount(fresh.favoritesCount);
+      setProject(fresh); setIsFavorited(fresh.isFavorited); setFavCount(fresh.favoritesCount);
     } catch (e: unknown) {
       if (e instanceof Error) setSaveError(e.message);
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   }
 
   async function saveCurrentData(): Promise<boolean> {
     if (!id || !accessToken) return false;
-    setSaving(true);
-    setSaveError('');
+    setSaving(true); setSaveError('');
     try {
       const commonFields = {
-        title: titleInput.trim() || undefined,
-        description: descInput.trim() || undefined,
-        stack: stackItems,
-        isPublic: isPublicInput,
-        demoUrl: demoUrlInput.trim() || undefined,
+        title: titleInput.trim() || undefined, description: descInput.trim() || undefined,
+        stack: stackItems, isPublic: isPublicInput, demoUrl: demoUrlInput.trim() || undefined,
       };
       const data = activeTab === 'manual'
-        ? {
-            ...commonFields,
-            startedAt: startedAtInput || undefined,
-            finishedAt: finishedAtInput || undefined,
-          }
-        : {
-            ...commonFields,
-            repoUrl: repoUrlInput.trim() || undefined,
-          };
+        ? { ...commonFields, startedAt: startedAtInput || undefined, finishedAt: finishedAtInput || undefined }
+        : { ...commonFields, repoUrl: repoUrlInput.trim() || undefined };
       await updateProject(id, accessToken, data);
       if (activeTab === 'github' && repoUrlInput.trim()) {
         await fetchProjectGithubData(id, accessToken).catch(() => {});
       }
       const fresh = await getProject(id, accessToken);
-      setProject(fresh);
-      setIsFavorited(fresh.isFavorited);
-      setFavCount(fresh.favoritesCount);
+      setProject(fresh); setIsFavorited(fresh.isFavorited); setFavCount(fresh.favoritesCount);
       return true;
     } catch (e: unknown) {
       if (e instanceof Error) setSaveError(e.message);
       return false;
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   }
 
   async function handleSave() {
@@ -316,19 +226,13 @@ function Project() {
 
   function commitStackInput() {
     const val = stackInput.trim().replace(/,$/, '');
-    if (val && !stackItems.includes(val)) {
-      setStackItems((prev) => [...prev, val]);
-    }
+    if (val && !stackItems.includes(val)) setStackItems((prev) => [...prev, val]);
     setStackInput('');
   }
 
   function handleStackKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      commitStackInput();
-    } else if (e.key === 'Backspace' && !stackInput) {
-      setStackItems((prev) => prev.slice(0, -1));
-    }
+    if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); commitStackInput(); }
+    else if (e.key === 'Backspace' && !stackInput) setStackItems((prev) => prev.slice(0, -1));
   }
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -339,17 +243,13 @@ function Project() {
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
-    setUploading(true);
-    setFileError('');
+    setUploading(true); setFileError('');
     try {
       const uploaded = await uploadProjectFile(id, accessToken, file);
       setProject((prev) => prev ? { ...prev, files: [...prev.files, uploaded] } : prev);
     } catch (err: unknown) {
       if (err instanceof Error) setFileError(err.message);
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    } finally { setUploading(false); if (fileInputRef.current) fileInputRef.current.value = ''; }
   }
 
   async function handleFileDelete(fileId: string) {
@@ -358,70 +258,48 @@ function Project() {
     try {
       await deleteProjectFile(id, fileId, accessToken);
       setProject((prev) => prev ? { ...prev, files: prev.files.filter((f) => f.id !== fileId) } : prev);
-    } catch (err: unknown) {
-      if (err instanceof Error) setFileError(err.message);
-    }
+    } catch (err: unknown) { if (err instanceof Error) setFileError(err.message); }
+  }
+
+  async function handleGenerateAiSummary() {
+    if (!id || !accessToken) return;
+    setAiGenerating(true); setAiError('');
+    try {
+      if (isEditing) await saveCurrentData();
+      setAiSummary(await generateReport(accessToken, 'project_summary', id));
+    } catch (e) { setAiError(e instanceof Error ? e.message : 'Ошибка генерации'); }
+    finally { setAiGenerating(false); }
+  }
+
+  async function handleToggleAiVisibility() {
+    if (!aiSummary || !accessToken) return;
+    try { setAiSummary(await toggleReportVisibility(accessToken, aiSummary.id)); } catch {}
   }
 
   async function handleFavorite() {
     if (!accessToken || !id || favLoading) return;
     setFavLoading(true);
-
     if (isFavorited) {
-      setIsFavorited(false);
-      setFavCount((c) => c - 1);
-      try {
-        await removeFavorite(id, accessToken);
-      } catch {
-        setIsFavorited(true);
-        setFavCount((c) => c + 1);
-      }
+      setIsFavorited(false); setFavCount((c) => c - 1);
+      try { await removeFavorite(id, accessToken); } catch { setIsFavorited(true); setFavCount((c) => c + 1); }
     } else {
-      setIsFavorited(true);
-      setFavCount((c) => c + 1);
-      try {
-        await addFavorite(id, accessToken);
-      } catch {
-        setIsFavorited(false);
-        setFavCount((c) => c - 1);
-      }
+      setIsFavorited(true); setFavCount((c) => c + 1);
+      try { await addFavorite(id, accessToken); } catch { setIsFavorited(false); setFavCount((c) => c - 1); }
     }
-
     setFavLoading(false);
   }
 
   if (loadError) {
-    return (
-      <>
-        <Header />
-        <div className="container page">
-          <p className="text">{loadError}</p>
-        </div>
-        <Footer />
-      </>
-    );
+    return (<><Header /><div className="container page"><p className="text">{loadError}</p></div><Footer /></>);
   }
 
   if (!project) {
-    return (
-      <>
-        <Header />
-        <div className="container page">
-          <p className="text">Загрузка...</p>
-        </div>
-        <Footer />
-      </>
-    );
+    return (<><Header /><div className="container page"><p className="text">Загрузка...</p></div><Footer /></>);
   }
-
-  const images = project.files.filter((f) => f.type === 'image');
-  const otherFiles = project.files.filter((f) => f.type === 'file');
-  const selectedRepo = selectedRepoId ? (githubRepos.find((r) => r.id === selectedRepoId) ?? null) : null;
 
   return (
     <>
       <Header />
-
       <div className="container page">
 
         <div className="project-nav">
@@ -456,476 +334,62 @@ function Project() {
         {saveError && <p className="project-error text">{saveError}</p>}
 
         {isEditing ? (
-          <div className="project-editor">
-
-            <div className="project-tabs">
-              <button
-                className={`project-tab text${activeTab === 'manual' ? ' project-tab--active' : ''}`}
-                onClick={() => setActiveTab('manual')}
-              >
-                Вручную
-              </button>
-              <button
-                className={`project-tab text${activeTab === 'github' ? ' project-tab--active' : ''}`}
-                onClick={() => setActiveTab('github')}
-              >
-                GitHub
-              </button>
-            </div>
-
-            {activeTab === 'manual' && (
-              <div className="project-edit-form">
-
-                <div className="project-edit-field">
-                  <label className="text bold">Название</label>
-                  <input
-                    className="project-input text"
-                    value={titleInput}
-                    onChange={(e) => setTitleInput(e.target.value)}
-                    maxLength={200}
-                    placeholder="Название проекта"
-                  />
-                </div>
-
-                <div className="project-edit-field">
-                  <label className="text bold">Описание</label>
-                  <textarea
-                    className="project-textarea text"
-                    value={descInput}
-                    onChange={(e) => setDescInput(e.target.value)}
-                    rows={5}
-                    placeholder="Расскажите о проекте"
-                  />
-                </div>
-
-                <div className="project-edit-field">
-                  <label className="text bold">Стек технологий</label>
-                  <div className="stack-chips">
-                    {stackItems.map((item) => (
-                      <div key={item} className="stack-chip">
-                        <span className="text">{item}</span>
-                        <button
-                          className="stack-chip__remove"
-                          onClick={() => setStackItems((prev) => prev.filter((s) => s !== item))}
-                        >×</button>
-                      </div>
-                    ))}
-                    <input
-                      className="stack-chip-input text"
-                      value={stackInput}
-                      onChange={(e) => setStackInput(e.target.value)}
-                      onKeyDown={handleStackKeyDown}
-                      onBlur={commitStackInput}
-                      placeholder="Введите и нажмите Enter"
-                    />
-                  </div>
-                </div>
-
-                <div className="project-edit-field project-edit-field--row">
-                  <label className="text bold">Публичный проект</label>
-                  <input
-                    type="checkbox"
-                    className="project-checkbox"
-                    checked={isPublicInput}
-                    onChange={(e) => setIsPublicInput(e.target.checked)}
-                  />
-                </div>
-
-                <div className="project-edit-field">
-                  <label className="text bold">Ссылка на демо</label>
-                  <input
-                    type="url"
-                    className="project-input text"
-                    value={demoUrlInput}
-                    onChange={(e) => setDemoUrlInput(e.target.value)}
-                    placeholder="https://example.com"
-                  />
-                </div>
-
-                <div className="project-edit-field">
-                  <label className="text bold">Период работы</label>
-                  <div className="project-dates-row">
-                    <div className="project-date-field">
-                      <span className="text">Начало</span>
-                      <input
-                        type="date"
-                        className="project-input text"
-                        value={startedAtInput}
-                        onChange={(e) => setStartedAtInput(e.target.value)}
-                      />
-                    </div>
-                    <div className="project-date-field">
-                      <span className="text">Конец</span>
-                      <input
-                        type="date"
-                        className="project-input text"
-                        value={finishedAtInput}
-                        onChange={(e) => setFinishedAtInput(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="project-edit-field">
-                  <label className="text bold">Файлы</label>
-                  {fileError && <p className="project-error text">{fileError}</p>}
-                  <div className="project-files-list">
-                    {project.files.map((f) => (
-                      <div key={f.id} className="project-file-item">
-                        <span className="text">{f.originalName}</span>
-                        <button className="project-file-remove text" onClick={() => handleFileDelete(f.id)}>
-                          Удалить
-                        </button>
-                      </div>
-                    ))}
-                    {project.files.length === 0 && (
-                      <p className="text project-files-empty">Нет файлов</p>
-                    )}
-                  </div>
-                  <button
-                    className="button-light text project-upload-btn"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                  >
-                    {uploading ? 'Загрузка...' : '+ Добавить файл'}
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,application/pdf,text/plain,text/markdown,application/json,application/zip,.ts,.tsx,.js,.jsx,.py,.go,.rs,.java,.cpp,.c,.cs,.md"
-                    style={{ display: 'none' }}
-                    onChange={handleFileUpload}
-                  />
-                </div>
-
-              </div>
-            )}
-
-            {activeTab === 'github' && (
-              <div className="project-edit-form">
-
-                <div className="project-edit-field">
-                  <label className="text bold">Репозиторий GitHub</label>
-
-                  {(githubReposLoading || !githubFetchDone) && (
-                    <p className="text project-github-hint">Загрузка репозиториев...</p>
-                  )}
-
-                  {githubFetchDone && githubReposError && !githubReposLoading && (
-                    <div className="project-github-error">
-                      <p className="text project-github-hint">{githubReposError}</p>
-                      <button
-                        className="button-light text"
-                        onClick={() => { setGithubFetchDone(false); fetchGithubRepos(); }}
-                      >
-                        Попробовать снова
-                      </button>
-                    </div>
-                  )}
-
-                  {githubFetchDone && !githubReposLoading && !githubReposError && githubRepos.length === 0 && (
-                    <p className="text project-github-hint">
-                      Нет синхронизированных репозиториев. Привяжите GitHub аккаунт в профиле.
-                    </p>
-                  )}
-
-                  {githubRepos.length > 0 && (
-                    <select
-                      className="project-input text"
-                      value={selectedRepoId ?? ''}
-                      onChange={(e) => handleRepoSelect(e.target.value)}
-                    >
-                      <option value="">— выберите репозиторий —</option>
-                      {githubRepos.map((repo) => (
-                        <option key={repo.id} value={repo.id}>
-                          {repo.name}{repo.starsCount > 0 ? ` ★ ${repo.starsCount}` : ''}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                {(selectedRepoId || repoUrlInput) && (
-                  <>
-                    {repoUrlInput && (
-                      <div className="project-edit-field">
-                        <label className="text bold">Ссылка на репозиторий</label>
-                        <a
-                          href={repoUrlInput}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text link project-github-hint"
-                        >
-                          {repoUrlInput}
-                        </a>
-                      </div>
-                    )}
-
-                    <div className="project-edit-field">
-                      <label className="text bold">Название</label>
-                      <input
-                        className="project-input text"
-                        value={titleInput}
-                        onChange={(e) => setTitleInput(e.target.value)}
-                        maxLength={200}
-                      />
-                    </div>
-
-                    <div className="project-edit-field">
-                      <label className="text bold">Описание</label>
-                      <textarea
-                        className="project-textarea text"
-                        value={descInput}
-                        onChange={(e) => setDescInput(e.target.value)}
-                        rows={5}
-                        placeholder="Расскажите о проекте"
-                      />
-                      {selectedRepo?.readmeExcerpt && (
-                        <details className="project-readme-hint">
-                          <summary className="text">README (фрагмент)</summary>
-                          <p className="text project-readme-text">{selectedRepo.readmeExcerpt}</p>
-                        </details>
-                      )}
-                    </div>
-
-                    <div className="project-edit-field">
-                      <label className="text bold">Стек технологий</label>
-                      <div className="stack-chips">
-                        {stackItems.map((item) => (
-                          <div key={item} className="stack-chip">
-                            <span className="text">{item}</span>
-                            <button
-                              className="stack-chip__remove"
-                              onClick={() => setStackItems((prev) => prev.filter((s) => s !== item))}
-                            >×</button>
-                          </div>
-                        ))}
-                        <input
-                          className="stack-chip-input text"
-                          value={stackInput}
-                          onChange={(e) => setStackInput(e.target.value)}
-                          onKeyDown={handleStackKeyDown}
-                          onBlur={commitStackInput}
-                          placeholder="Введите и нажмите Enter"
-                        />
-                      </div>
-                      {selectedRepo && Object.keys(selectedRepo.languages).length > 0 && (() => {
-                        const total = Object.values(selectedRepo.languages).reduce((a, b) => a + b, 0);
-                        return (
-                          <p className="text project-langs-hint">
-                            {Object.entries(selectedRepo.languages)
-                              .sort(([, a], [, b]) => b - a)
-                              .map(([lang, bytes]) => `${lang} ${Math.round(bytes / total * 100)}%`)
-                              .join(' · ')}
-                          </p>
-                        );
-                      })()}
-                    </div>
-
-                    <div className="project-edit-field">
-                      <label className="text bold">Ссылка на демо</label>
-                      <input
-                        type="url"
-                        className="project-input text"
-                        value={demoUrlInput}
-                        onChange={(e) => setDemoUrlInput(e.target.value)}
-                        placeholder="https://example.com"
-                      />
-                    </div>
-
-                    <div className="project-edit-field project-edit-field--row">
-                      <label className="text bold">Публичный проект</label>
-                      <input
-                        type="checkbox"
-                        className="project-checkbox"
-                        checked={isPublicInput}
-                        onChange={(e) => setIsPublicInput(e.target.checked)}
-                      />
-                    </div>
-                  </>
-                )}
-
-              </div>
-            )}
-
-            <div className="project-ai-card">
-              <div className="project-ai-card-title">
-                <img src={aiStar} alt="AI" className="project-ai-icon" />
-                <span className="text bold">Описание от ИИ</span>
-                {aiSummary?.status === 'done' && (
-                  <label className="project-ai-visibility">
-                    <span className="text">Приватное описание</span>
-                    <input
-                      type="checkbox"
-                      className="project-checkbox"
-                      checked={!aiSummary.isPublic}
-                      onChange={handleToggleAiVisibility}
-                    />
-                  </label>
-                )}
-              </div>
-              {aiSummary?.status === 'pending' && (
-                <p className="text project-ai-status">Генерация описания...</p>
-              )}
-              {aiSummary?.status === 'error' && (
-                <p className="text project-ai-error">{aiSummary.errorMessage || 'Ошибка генерации'}</p>
-              )}
-              {aiSummary?.status === 'done' && aiSummary.summary && (
-                <p className="text project-ai-text">{aiSummary.summary}</p>
-              )}
-              {aiError && <p className="text project-ai-error">{aiError}</p>}
-              <button
-                className="button-light text"
-                onClick={handleGenerateAiSummary}
-                disabled={aiGenerating || aiSummary?.status === 'pending'}
-              >
-                {aiGenerating ? 'Запрос...' : aiSummary ? 'Перегенерировать' : 'Сгенерировать описание'}
-              </button>
-            </div>
-
-          </div>
+          <ProjectEditor
+            project={project}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            titleInput={titleInput}
+            descInput={descInput}
+            stackInput={stackInput}
+            stackItems={stackItems}
+            isPublicInput={isPublicInput}
+            demoUrlInput={demoUrlInput}
+            startedAtInput={startedAtInput}
+            finishedAtInput={finishedAtInput}
+            repoUrlInput={repoUrlInput}
+            selectedRepoId={selectedRepoId}
+            githubRepos={githubRepos}
+            githubReposLoading={githubReposLoading}
+            githubReposError={githubReposError}
+            githubFetchDone={githubFetchDone}
+            fileInputRef={fileInputRef}
+            uploading={uploading}
+            fileError={fileError}
+            aiSummary={aiSummary}
+            aiGenerating={aiGenerating}
+            aiError={aiError}
+            onTitleChange={setTitleInput}
+            onDescChange={setDescInput}
+            onStackInputChange={setStackInput}
+            onStackItemRemove={(item) => setStackItems((prev) => prev.filter((s) => s !== item))}
+            onStackKeyDown={handleStackKeyDown}
+            onStackBlur={commitStackInput}
+            onIsPublicChange={setIsPublicInput}
+            onDemoUrlChange={setDemoUrlInput}
+            onStartedAtChange={setStartedAtInput}
+            onFinishedAtChange={setFinishedAtInput}
+            onRepoSelect={handleRepoSelect}
+            onRetryGithubFetch={() => { setGithubFetchDone(false); fetchGithubRepos(); }}
+            onFileUpload={handleFileUpload}
+            onFileDelete={handleFileDelete}
+            onGenerateAiSummary={handleGenerateAiSummary}
+            onToggleAiVisibility={handleToggleAiVisibility}
+          />
         ) : (
-          <>
-            <div className="project-header">
-              <div className="project-header__top">
-                <div className="project-header__info">
-                  <h1 className="project-h1">{project.title}</h1>
-                  {project.repoUrl && (
-                    <a href={project.repoUrl} target="_blank" rel="noreferrer" className="project-github">
-                      <img src={github} alt="GitHub" />
-                    </a>
-                  )}
-                  {project.demoUrl && (
-                    <a href={project.demoUrl} target="_blank" rel="noreferrer" className="button text project-demo-link">
-                      Демо
-                    </a>
-                  )}
-                  {project.source === 'github' && (
-                    <div className="project-aiDescription">
-                      <img src={aiStar} alt="AI" />
-                      <p className="profile-class__text">GitHub-проект</p>
-                    </div>
-                  )}
-                </div>
-
-                {!isOwn && (
-                  <div className="project-favorite">
-                    <button
-                      className="like-btn"
-                      onClick={handleFavorite}
-                      disabled={!accessToken || favLoading}
-                      style={{ background: 'none', border: 'none', cursor: !accessToken ? 'default' : 'pointer' }}
-                    >
-                      <img src={isFavorited ? likeFill : likeEmpty} alt="Like" className="like-icon" />
-                    </button>
-                    {favCount > 0 && <span className="text project-fav-count">{favCount}</span>}
-                  </div>
-                )}
-              </div>
-
-              {project.stack.length > 0 && (
-                <div className="project-header__bottom">
-                  <p className="text bold">Инструменты:</p>
-                  <div className="instruments">
-                    {project.stack.map((item) => (
-                      <div key={item} className="instruments__item"><p>{item}</p></div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {project.githubRepo && (
-                <div className="project-github-meta">
-                  {project.githubRepo.starsCount > 0 && (
-                    <span className="project-github-stars text">★ {project.githubRepo.starsCount}</span>
-                  )}
-                  {project.githubRepo.isFork && (
-                    <span className="project-github-badge text">Fork</span>
-                  )}
-                  {project.githubRepo.topics.map((t) => (
-                    <span key={t} className="project-github-badge text">{t}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="project-body">
-
-              {project.description && (
-                <div className="project-section">
-                  <h2 className="project-h2">Описание проекта</h2>
-                  <p className="text">{project.description}</p>
-                </div>
-              )}
-
-              {aiSummary?.status === 'done' && aiSummary.summary && (isOwn || aiSummary.isPublic) && (
-                <div className="project-section">
-                  <div className="project-ai-view-title">
-                    <img src={aiStar} alt="AI" className="project-ai-icon" />
-                    <h2 className="project-h2">Описание от ИИ</h2>
-                    {isOwn && !aiSummary.isPublic && (
-                      <span className="project-ai-badge">приватно</span>
-                    )}
-                  </div>
-                  <p className="text project-ai-text">{aiSummary.summary}</p>
-                </div>
-              )}
-
-              {project.githubRepoId && (
-                <div className="project-section">
-                  <h2 className="project-h2">Файлы репозитория</h2>
-                  <GithubFileBrowser repoId={project.githubRepoId} />
-                </div>
-              )}
-
-              {(images.length > 0 || otherFiles.length > 0) && (
-                <div className="project-section">
-                  <h2 className="project-h2">Прикреплённые файлы</h2>
-                  {images.length > 0 && (
-                    <div className="project-images">
-                      {images.map((f) => (
-                        <img key={f.id} src={f.fileUrl} alt={f.originalName} className="project-image" />
-                      ))}
-                    </div>
-                  )}
-                  {otherFiles.length > 0 && (
-                    <div className="project-downloads">
-                      {otherFiles.map((f) => (
-                        <a key={f.id} href={f.fileUrl} download={f.originalName} className="button text">
-                          {f.originalName}
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="project-footer">
-                {authorNickname && (
-                  <Link to={`/users/${project.userId}`} className="text bold link">
-                    © {authorNickname}
-                  </Link>
-                )}
-                {(project.startedAt || project.finishedAt) && (
-                  <p className="text">
-                    {project.startedAt
-                      ? new Date(project.startedAt).toLocaleDateString('ru-RU')
-                      : '...'}
-                    {' — '}
-                    {project.finishedAt
-                      ? new Date(project.finishedAt).toLocaleDateString('ru-RU')
-                      : 'по настоящее время'}
-                  </p>
-                )}
-                <p className="text">{new Date(project.createdAt).toLocaleDateString('ru-RU')}</p>
-              </div>
-
-            </div>
-          </>
+          <ProjectView
+            project={project}
+            aiSummary={aiSummary}
+            isOwn={isOwn}
+            isFavorited={isFavorited}
+            favCount={favCount}
+            favLoading={favLoading}
+            accessToken={accessToken}
+            authorNickname={authorNickname}
+            onFavorite={handleFavorite}
+          />
         )}
 
       </div>
-
       <Footer />
     </>
   );

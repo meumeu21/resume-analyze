@@ -18,58 +18,21 @@ import {
 import { GithubRepo } from '../database/entities/github-repo.entity';
 import { PagedResult, PaginationDto } from '../common/dto/pagination.dto';
 import { GenerateReportDto } from './dto/generate-report.dto';
+import { AI_REPORTS_QUEUE } from './ai.constants';
+import { ResumeData, ImprovementsData } from './ai.types';
+import {
+  systemPrompt,
+  resumeSystemPrompt,
+  buildPrompt,
+  buildResumePrompt,
+  buildImprovementsPrompt,
+  buildCoordinatesPrompt,
+  buildInterestGraphPrompt,
+} from './ai.prompts';
+import { extractJson, formatResumeSummary, formatImprovementsSummary } from './ai.utils';
 
-export const AI_REPORTS_QUEUE = 'ai-reports';
-
-export const DEVELOPER_CATEGORIES = [
-  'Frontend-разработчик',
-  'Backend-разработчик',
-  'Full-Stack разработчик',
-  'Мобильный разработчик',
-  'Data Scientist',
-  'ML-инженер',
-  'DevOps-инженер',
-  'QA-инженер',
-  'Разработчик игр',
-  'Blockchain-разработчик',
-  'Embedded-разработчик',
-  'Security-инженер',
-  'Cloud-инженер',
-  'Архитектор / Tech Lead',
-] as const;
-
-interface ResumeProject {
-  title: string;
-  description: string;
-  stack: string;
-}
-
-interface ResumeData {
-  first_name: string;
-  last_name: string;
-  job_title: string;
-  about: string;
-  hard_skills: string;
-  soft_skills: string;
-  projects: ResumeProject[];
-}
-
-interface ImprovementRecommendation {
-  title: string;
-  description: string;
-}
-
-interface ProjectIdea {
-  title: string;
-  description: string;
-  stack: string[];
-  benefit: string;
-}
-
-interface ImprovementsData {
-  recommendations: ImprovementRecommendation[];
-  project_ideas: ProjectIdea[];
-}
+export { AI_REPORTS_QUEUE } from './ai.constants';
+export { DEVELOPER_CATEGORIES } from './ai.constants';
 
 @Injectable()
 export class AiService {
@@ -85,10 +48,6 @@ export class AiService {
     @InjectRepository(GithubRepo) private readonly githubRepoRepo: Repository<GithubRepo>,
     @InjectQueue(AI_REPORTS_QUEUE) private readonly aiQueue: Queue,
   ) {
-    // this.client = new OpenAI({
-    //   apiKey: this.config.get<string>('GEMINI_API_KEY'),
-    //   baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/',
-    // });
     this.client = new OpenAI({
       apiKey: this.config.get<string>('MISTRAL_API_KEY'),
       baseURL: 'https://api.mistral.ai/v1',
@@ -189,12 +148,12 @@ export class AiService {
     }
 
     try {
-      const prompt = this.buildPrompt(report.reportType, profile, project, githubRepo, allProjects);
+      const prompt = buildPrompt(report.reportType, profile, project, githubRepo, allProjects);
       const completion = await this.callAI({
         model: 'mistral-small-latest',
         max_tokens: 1500,
         messages: [
-          { role: 'system', content: this.systemPrompt() },
+          { role: 'system', content: systemPrompt() },
           { role: 'user', content: prompt },
         ],
       });
@@ -226,22 +185,22 @@ export class AiService {
     });
 
     try {
-      const prompt = this.buildResumePrompt(profile, publicProjects);
+      const prompt = buildResumePrompt(profile, publicProjects);
       const completion = await this.callAI({
         model: 'mistral-small-latest',
         max_tokens: 2000,
         messages: [
-          { role: 'system', content: this.resumeSystemPrompt() },
+          { role: 'system', content: resumeSystemPrompt() },
           { role: 'user', content: prompt },
         ],
       });
 
       const rawText = completion.choices[0]?.message?.content ?? '';
-      const resumeData: ResumeData = JSON.parse(this.extractJson(rawText));
+      const resumeData: ResumeData = JSON.parse(extractJson(rawText));
 
       report.status = ReportStatus.DONE;
       report.rawResponse = resumeData as unknown as Record<string, unknown>;
-      report.summary = this.formatResumeSummary(resumeData);
+      report.summary = formatResumeSummary(resumeData);
     } catch (err) {
       report.status = ReportStatus.ERROR;
       report.errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
@@ -256,22 +215,22 @@ export class AiService {
     const allProjects = await this.projectRepo.find({ where: { userId: report.userId } });
 
     try {
-      const prompt = this.buildImprovementsPrompt(profile, allProjects);
+      const prompt = buildImprovementsPrompt(profile, allProjects);
       const completion = await this.callAI({
         model: 'mistral-small-latest',
         max_tokens: 4096,
         messages: [
-          { role: 'system', content: this.systemPrompt() },
+          { role: 'system', content: systemPrompt() },
           { role: 'user', content: prompt },
         ],
       });
 
       const rawText = completion.choices[0]?.message?.content ?? '';
-      const data: ImprovementsData = JSON.parse(this.extractJson(rawText));
+      const data: ImprovementsData = JSON.parse(extractJson(rawText));
 
       report.status = ReportStatus.DONE;
       report.rawResponse = data as unknown as Record<string, unknown>;
-      report.summary = this.formatImprovementsSummary(data);
+      report.summary = formatImprovementsSummary(data);
     } catch (err) {
       report.status = ReportStatus.ERROR;
       report.errorMessage = err instanceof Error ? err.message : 'Неизвестная ошибка';
@@ -286,7 +245,7 @@ export class AiService {
     const allProjects = await this.projectRepo.find({ where: { userId: report.userId } });
 
     try {
-      const prompt = this.buildCoordinatesPrompt(profile, allProjects);
+      const prompt = buildCoordinatesPrompt(profile, allProjects);
       const completion = await this.callAI({
         model: 'mistral-small-latest',
         max_tokens: 1500,
@@ -297,7 +256,7 @@ export class AiService {
       });
 
       const rawText = completion.choices[0]?.message?.content ?? '';
-      const coords: { x: number; y: number } = JSON.parse(this.extractJson(rawText));
+      const coords: { x: number; y: number } = JSON.parse(extractJson(rawText));
 
       const x = Math.max(-5, Math.min(5, Number(coords.x)));
       const y = Math.max(-5, Math.min(5, Number(coords.y)));
@@ -334,7 +293,6 @@ export class AiService {
     this.logger.log(`SkillMap report ${report.id} finished with status ${report.status}`);
   }
 
-
   private async processNetworkGraphReport(report: AiReport, profile: Profile): Promise<void> {
     const allProjects = await this.projectRepo.find({ where: { userId: report.userId } });
 
@@ -368,12 +326,12 @@ export class AiService {
             role: 'system',
             content: 'Ты аналитик интересов IT-разработчика. Отвечай ТОЛЬКО валидным компактным JSON одной строкой без markdown и пояснений.',
           },
-          { role: 'user', content: this.buildInterestGraphPrompt(projectsInfo) },
+          { role: 'user', content: buildInterestGraphPrompt(projectsInfo) },
         ],
       });
 
       const rawText = completion.choices[0]?.message?.content ?? '';
-      const parsed = JSON.parse(this.extractJson(rawText));
+      const parsed = JSON.parse(extractJson(rawText));
 
       let resolvedData: { nodes: unknown; edges: unknown } = parsed;
       if (!Array.isArray(parsed?.nodes) && parsed && typeof parsed === 'object') {
@@ -420,53 +378,6 @@ export class AiService {
     this.logger.log(`NetworkGraph report ${report.id} finished with status ${report.status}`);
   }
 
-  private buildInterestGraphPrompt(projectsInfo: string): string {
-    return `Проанализируй проекты разработчика и построй граф его интересов.
-
-=== ПРОЕКТЫ (название + описание/README) ===
-${projectsInfo}
-
-=== ПРАВИЛА ===
-1. ОБЛАСТИ (type "domain", weight 3-5): широкие тематические области из проектов (например: "Веб-разработка", "Автоматизация", "Геймдев", "Data Science"). Только реально присутствующие.
-2. ИНТЕРЕСЫ (type "technology", weight 1-4): конкретная тема каждого проекта, выведенная из его названия и описания. Одно короткое существительное или словосочетание (2-3 слова).
-3. РЁБРА: интерес → область к которой относится; область ↔ область если тематически связаны.
-4. ОГРАНИЧЕНИЯ: 8-16 узлов, нет изолированных узлов, id — строчный латинский без пробелов.
-
-Верни ТОЛЬКО компактный JSON одной строкой:
-{"nodes":[{"id":"web","label":"Веб-разработка","type":"domain","weight":5},{"id":"resume_analyzer","label":"Анализ резюме","type":"technology","weight":3}],"edges":[{"source":"resume_analyzer","target":"web"}]}`;
-  }
-
-
-  private buildCoordinatesPrompt(profile: Profile, allProjects: Project[]): string {
-    const skillNames = profile.hardSkills.map((s) => s.name);
-    const projectsInfo = allProjects.length
-      ? allProjects.map((p) => [
-          `— ${p.title}`,
-          p.description ? `  Описание: ${p.description}` : null,
-          p.stack.length ? `  Стек: ${p.stack.join(', ')}` : null,
-          p.role ? `  Роль: ${p.role}` : null,
-        ].filter(Boolean).join('\n')).join('\n\n')
-      : 'Проекты не указаны';
-
-    return `Определи координаты разработчика на 2D-плоскости по его проектам и навыкам.
-
-Ось X: от -5 (низкоуровневое программирование: embedded, ядро ОС, драйверы, asm, C)
-        до +5 (высокоуровневое: веб, мобайл, бизнес-логика, SaaS, скрипты)
-
-Ось Y: от -5 (продуктовый подход: UX, фичи для пользователя, бизнес-результат, метрики)
-        до +5 (инженерный подход: архитектура, надёжность, производительность, инфраструктура)
-
-=== ПРОЕКТЫ ===
-${projectsInfo}
-
-=== НАВЫКИ ===
-${skillNames.length ? skillNames.join(', ') : 'не указаны'}
-${profile.activityField ? `Специализация: ${profile.activityField}` : ''}
-
-Верни ТОЛЬКО JSON с двумя числами (дробные допустимы):
-{"x": 0.0, "y": 0.0}`;
-  }
-
   async ensurePublicProjectSummary(projectId: string): Promise<AiReport | null> {
     const project = await this.projectRepo.findOne({ where: { id: projectId, isPublic: true } });
     if (!project) throw new NotFoundException('Проект не найден или не является публичным');
@@ -486,7 +397,7 @@ ${profile.activityField ? `Специализация: ${profile.activityField}`
       : null;
 
     const safeProfile = profile ?? ({ hardSkills: [], softSkills: [], bio: null, activityField: null } as unknown as Profile);
-    const prompt = this.buildPrompt(ReportType.PROJECT_SUMMARY, safeProfile, project, githubRepo, []);
+    const prompt = buildPrompt(ReportType.PROJECT_SUMMARY, safeProfile, project, githubRepo, []);
 
     let completion: Awaited<ReturnType<typeof this.callAI>>;
     try {
@@ -494,7 +405,7 @@ ${profile.activityField ? `Специализация: ${profile.activityField}`
         model: 'mistral-small-latest',
         max_tokens: 800,
         messages: [
-          { role: 'system', content: this.systemPrompt() },
+          { role: 'system', content: systemPrompt() },
           { role: 'user', content: prompt },
         ],
       });
@@ -574,217 +485,6 @@ ${profile.activityField ? `Специализация: ${profile.activityField}`
     return this.reportRepo.save(report);
   }
 
-  private resumeSystemPrompt(): string {
-    return `Ты профессиональный HR-копирайтер для IT-специалистов.
-Твоя задача — не просто скопировать данные, а превратить их в сильный, живой текст резюме.
-Интерпретируй навыки и опыт выгодно: покажи сильные стороны, раскрой ценность каждого умения.
-Пиши по-русски, профессионально, без клише. Без воды, но убедительно.
-Отвечай ТОЛЬКО JSON-объектом без markdown, без пояснений, без лишнего текста.
-Если данных нет — оставь поле пустой строкой.`;
-  }
-
-  private buildResumePrompt(profile: Profile, publicProjects: Project[]): string {
-    const skillNames = profile.hardSkills.map((s) => `${s.name} (уровень ${s.level}/5)`);
-
-    const projectsText = publicProjects.length
-      ? publicProjects.map((p) => [
-          `- ${p.title}${p.role ? ` (роль: ${p.role})` : ''}`,
-          p.description ? `  Описание: ${p.description}` : null,
-          p.stack.length ? `  Стек: ${p.stack.join(', ')}` : null,
-          p.tags.length ? `  Теги: ${p.tags.join(', ')}` : null,
-        ].filter(Boolean).join('\n')).join('\n\n')
-      : 'Публичные проекты не указаны';
-
-    return `Вот сырые данные разработчика. На их основе создай текст для резюме — не просто форматируй, а осмысли и улучши.
-
-=== ДАННЫЕ ПРОФИЛЯ ===
-Имя: ${profile.firstName || '(не указано)'}
-Фамилия: ${profile.lastName || '(не указано)'}
-Сфера деятельности: ${profile.activityField || 'не указана'}
-О себе (черновик): ${profile.bio || 'не указано'}
-Технические навыки: ${skillNames.length ? skillNames.join(', ') : 'не указаны'}
-Soft skills: ${profile.softSkills.length ? profile.softSkills.join(', ') : 'не указаны'}
-
-=== ПУБЛИЧНЫЕ ПРОЕКТЫ ===
-${projectsText}
-
-=== ИНСТРУКЦИИ ===
-Создай JSON со следующими полями. В каждом поле пиши связный, живой текст — не просто копируй данные:
-
-- "first_name": имя (берёшь как есть)
-- "last_name": фамилия (берёшь как есть)
-- "job_title": определи точную должность на английском (например: Frontend Developer, Full-Stack Engineer, Python Developer)
-- "about": 2-3 предложения — профессиональный summary. Расскажи кто этот разработчик, что умеет, чем ценен. Опирайся на навыки и проекты.
-- "hard_skills": 1-2 предложения про технические компетенции. Выдели главную экспертизу, покажи как навыки дополняют друг друга. Конкретные названия технологий оборачивай в **...** (например: "Уверенное владение **Python** как основным языком, дополненное знанием **Java**.")
-- "soft_skills": 1-2 предложения, раскрывающие личные качества через их практическую ценность. Не просто перечисляй — объясняй зачем они важны. Ключевые качества оборачивай в **...** (например: "**Системное мышление** помогает декомпозировать сложные задачи.").
-- "projects": массив объектов для каждого публичного проекта. Каждый объект содержит: "title" — название проекта, "description" — 1-2 предложения что сделано, какую задачу решает и почему это интересно, "stack" — технологии через запятую. Если проектов нет — пустой массив.
-
-Верни ТОЛЬКО JSON:
-{
-  "first_name": "...",
-  "last_name": "...",
-  "job_title": "...",
-  "about": "...",
-  "hard_skills": "...",
-  "soft_skills": "...",
-  "projects": [{"title": "...", "description": "...", "stack": "..."}]
-}`;
-  }
-
-  private formatResumeSummary(data: ResumeData): string {
-    const clean = (s: string) => s.replace(/\*\*([^*]+)\*\*/g, '$1');
-
-    const lines: string[] = [];
-    if (data.job_title) lines.push(data.job_title);
-    if (data.first_name || data.last_name) lines.push(`${data.first_name} ${data.last_name}`.trim());
-    if (lines.length) lines.push('');
-
-    if (data.about) {
-      lines.push('О себе:');
-      lines.push(clean(data.about));
-      lines.push('');
-    }
-    if (data.hard_skills) {
-      lines.push('Инструменты:');
-      lines.push(clean(data.hard_skills));
-      lines.push('');
-    }
-    if (data.soft_skills) {
-      lines.push('Soft Skills:');
-      lines.push(clean(data.soft_skills));
-      lines.push('');
-    }
-    if (data.projects?.length) {
-      lines.push('Проекты:');
-      for (const p of data.projects) {
-        lines.push(p.title);
-        if (p.description) lines.push(clean(p.description));
-        if (p.stack) lines.push(`Стек: ${clean(p.stack)}`);
-        lines.push('');
-      }
-    }
-
-    return lines.join('\n');
-  }
-
-  private systemPrompt(): string {
-    return `Ты опытный технический рекрутер и карьерный консультант для IT-специалистов.
-            Отвечай только на русском языке. Будь конкретным и практичным.
-            Не добавляй вступлений вроде "Конечно!" или "Отличный вопрос!". Сразу переходи к делу.`;
-  }
-
-  private buildPrompt(
-    type: ReportType,
-    profile: Profile,
-    project: Project | null,
-    githubRepo: GithubRepo | null,
-    allProjects: Project[],
-  ): string {
-    const skillNames = profile.hardSkills.map((s) => s.name);
-    const profileBase = [
-      skillNames.length ? `Навыки: ${skillNames.join(', ')}` : null,
-      profile.bio ? `О себе: ${profile.bio}` : null,
-    ].filter(Boolean).join('\n');
-
-    if (type === ReportType.ACTIVITY_FIELD) {
-      const projectsInfo = allProjects.length
-        ? allProjects.map((p) => [
-            `— ${p.title}`,
-            p.description ? `  Описание: ${p.description}` : null,
-            p.stack.length ? `  Стек: ${p.stack.join(', ')}` : null,
-            p.role ? `  Роль: ${p.role}` : null,
-          ].filter(Boolean).join('\n')).join('\n\n')
-        : 'Проекты не указаны';
-
-      const categoriesList = DEVELOPER_CATEGORIES.map((c, i) => `${i + 1}. ${c}`).join('\n');
-
-      return `Определи категорию разработчика на основе его данных.
-
-ВАЖНО: проекты — главный критерий, они отражают реальную специализацию лучше любых слов.
-
-=== ПРОЕКТЫ (анализируй в первую очередь) ===
-${projectsInfo}
-
-=== ПРОФИЛЬ ===
-${profileBase || 'Данные профиля не заполнены'}
-
-=== ДОПУСТИМЫЕ КАТЕГОРИИ ===
-${categoriesList}
-
-Выбери ОДНУ категорию из списка выше, которая точнее всего описывает специализацию этого разработчика.
-Верни ТОЛЬКО название категории — без номера, без кавычек, без пояснений. Ровно одну строку.`;
-    }
-
-    if (type === ReportType.IMPROVEMENTS) {
-      const projectsStack = [...new Set(allProjects.flatMap((p) => p.stack))];
-      const allSkills = [...new Set([...profile.hardSkills.map((s) => s.name), ...projectsStack])];
-
-      return `Разработчик со следующими навыками и технологиями: ${allSkills.length ? allSkills.join(', ') : 'навыки не указаны'}
-              ${profile.activityField ? `Направление: ${profile.activityField}` : ''}
-              Составь список рекомендаций "Что изучить дальше":
-              1. Назови 3-5 конкретных технологий или языков, которые логично освоить следующими
-              2. Для каждой технологии — одно предложение почему она важна для этого специалиста
-              3. Укажи один бесплатный ресурс для изучения каждой технологии
-              Формат: нумерованный список.`;
-    }
-
-    if (type === ReportType.PROJECT_SUMMARY && project) {
-      const projectInfo = [
-        `Название: ${project.title}`,
-        project.description ? `Описание: ${project.description}` : null,
-        project.role ? `Роль разработчика: ${project.role}` : null,
-        project.stack.length ? `Стек: ${project.stack.join(', ')}` : null,
-        project.tags.length ? `Теги: ${project.tags.join(', ')}` : null,
-      ].filter(Boolean).join('\n');
-
-      const githubInfo = githubRepo ? [
-        Object.keys(githubRepo.languages).length
-          ? `Языки в репозитории: ${Object.entries(githubRepo.languages)
-              .sort(([, a], [, b]) => b - a)
-              .slice(0, 5)
-              .map(([l]) => l).join(', ')}`
-          : null,
-        githubRepo.topics.length ? `Топики GitHub: ${githubRepo.topics.join(', ')}` : null,
-        githubRepo.readmeExcerpt ? `README:\n${githubRepo.readmeExcerpt}` : null,
-      ].filter(Boolean).join('\n') : null;
-
-      return `Проект разработчика:
-              ${projectInfo}
-              ${githubInfo ? `\nДанные из GitHub:\n${githubInfo}` : ''}
-              Напиши профессиональное резюме этого проекта для портфолио (3-4 предложения).
-              Опиши: что это за проект, какие технические решения применялись, в чём ценность проекта.
-              Пиши в третьем лице, как будто описываешь чужой проект. Без заголовков.`;
-    }
-
-    return profileBase;
-  }
-
-  private extractJson(text: string): string {
-    const stripped = text.replace(/```(?:json)?/g, '').replace(/```/g, '');
-
-    // Scan forward and collect ALL top-level balanced {..} blocks.
-    // Return the LONGEST one — the main JSON response is always larger than
-    // any individual thinking snippet or trailing node example.
-    let best = '';
-    let i = 0;
-    while (i < stripped.length) {
-      if (stripped[i] !== '{') { i++; continue; }
-      let depth = 0;
-      let end = -1;
-      for (let j = i; j < stripped.length; j++) {
-        if (stripped[j] === '{') depth++;
-        else if (stripped[j] === '}') { depth--; if (depth === 0) { end = j; break; } }
-      }
-      if (end === -1) { i++; continue; }
-      const candidate = stripped.slice(i, end + 1);
-      if (candidate.length > best.length) best = candidate;
-      i = end + 1;
-    }
-
-    if (!best) throw new Error('AI вернул некорректный JSON');
-    return this.repairJson(best);
-  }
-
   async markReportFailed(reportId: string, errorMessage: string): Promise<void> {
     const report = await this.reportRepo.findOne({ where: { id: reportId } });
     if (!report || report.status !== ReportStatus.PENDING) return;
@@ -792,92 +492,5 @@ ${categoriesList}
     report.errorMessage = errorMessage;
     await this.reportRepo.save(report);
     this.logger.warn(`Report ${reportId} marked as failed after all retries: ${errorMessage}`);
-  }
-
-  private repairJson(text: string): string {
-    return text
-      .replace(/,(\s*[}\]])/g, '$1')           // trailing commas
-      .replace(/}(\s*)\n(\s*){/g, '},\n$2{')   // missing comma between adjacent objects
-      .replace(/](\s*)\n(\s*)\[/g, '],\n$2['); // missing comma between adjacent arrays
-  }
-
-  private buildImprovementsPrompt(profile: Profile, allProjects: Project[]): string {
-    const skillNames = profile.hardSkills.map((s) => `${s.name} (уровень ${s.level}/5)`);
-    const projectsStack = [...new Set(allProjects.flatMap((p) => p.stack))];
-
-    const projectsInfo = allProjects.length
-      ? allProjects.map((p) => [
-          `— ${p.title}`,
-          p.description ? `  Описание: ${p.description}` : null,
-          p.stack.length ? `  Стек: ${p.stack.join(', ')}` : null,
-          p.role ? `  Роль: ${p.role}` : null,
-        ].filter(Boolean).join('\n')).join('\n\n')
-      : 'Проекты не указаны';
-
-    return `Ты анализируешь профиль разработчика и даёшь персонализированные рекомендации.
-
-=== ПРОФИЛЬ ===
-Класс разработчика: ${profile.activityField || 'не определён'}
-Навыки: ${skillNames.length ? skillNames.join(', ') : 'не указаны'}
-Soft skills: ${profile.softSkills.length ? profile.softSkills.join(', ') : 'не указаны'}
-О себе: ${profile.bio || 'не заполнено'}
-
-=== ПРОЕКТЫ (анализируй в первую очередь) ===
-${projectsInfo}
-
-Весь технологический стек из проектов: ${projectsStack.length ? projectsStack.join(', ') : 'не указан'}
-
-=== ЗАДАЧА ===
-На основе этих данных дай разработчику конкретные, персонализированные рекомендации.
-Используй реальные данные — не пиши общих фраз.
-
-Верни ТОЛЬКО JSON (без markdown, без пояснений):
-{
-  "recommendations": [
-    {
-      "title": "Краткое название аспекта (3-6 слов)",
-      "description": "1-3 предложения: что конкретно улучшить и почему это важно для этого разработчика"
-    }
-  ],
-  "project_ideas": [
-    {
-      "title": "Название проекта",
-      "description": "2-3 предложения: что это за проект и какую задачу решает",
-      "stack": ["Технология1", "Технология2"],
-      "benefit": "1 предложение: что конкретно даст реализация этого проекта данному разработчику"
-    }
-  ]
-}
-
-Требования:
-- recommendations: от 3 до 5 пунктов, конкретных и применимых
-- project_ideas: от 1 до 3 идей
-- stack в project_ideas: массив строк (названия технологий)
-- Всё на русском языке`;
-  }
-
-  private formatImprovementsSummary(data: ImprovementsData): string {
-    const lines: string[] = [];
-
-    if (data.recommendations?.length) {
-      lines.push('Рекомендации по развитию:');
-      for (const r of data.recommendations) {
-        lines.push(`\n${r.title}`);
-        lines.push(r.description);
-      }
-      lines.push('');
-    }
-
-    if (data.project_ideas?.length) {
-      lines.push('Идеи для проектов:');
-      for (const p of data.project_ideas) {
-        lines.push(`\n${p.title}`);
-        lines.push(p.description);
-        if (p.stack?.length) lines.push(`Стек: ${p.stack.join(', ')}`);
-        if (p.benefit) lines.push(`Польза: ${p.benefit}`);
-      }
-    }
-
-    return lines.join('\n');
   }
 }
